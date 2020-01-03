@@ -110,7 +110,7 @@ class Display():
         self.__lcd.blit(txt, (295, 222))
 
     def clearCallsignAndID(self):
-        pygame.draw.rect(self.__lcd, self.__black, (1,3,self.__screenWidth-2,92))
+        pygame.draw.rect(self.__lcd, self.__black, (5,3,self.__screenWidth-10,92))
 
     def clearFlightData(self):
         pygame.draw.rect(self.__lcd, self.__black, (5,105,141,93))
@@ -121,7 +121,7 @@ class Display():
 
     def displayCallsign(self, cs, isMil):
         if (isMil):
-            pygame.draw.rect(self.__lcd, self.__medRed, (1,30,self.__screenWidth-2,43))
+            pygame.draw.rect(self.__lcd, self.__medRed, (5,30,self.__screenWidth-10,43))
         txt = self.__csFont.render(cs.strip(), 1, self.__yellow)
         self.__lcd.blit(txt, ((self.__screenWidth - txt.get_width())/2, 30))
 
