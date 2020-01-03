@@ -25,7 +25,7 @@ class Display():
     def __initFonts(self):
         fontDir="/usr/share/fonts/truetype/freefont/"
         self.__idFont = pygame.font.Font(fontDir + "FreeMono.ttf", 23) # ICAO ID
-        self.__csFont = pygame.font.Font(fontDir + "FreeSans.ttf", 40) # callsign
+        self.__csFont = pygame.font.Font(fontDir + "FreeSans.ttf", 80) # callsign
         self.__fltFont = pygame.font.Font(fontDir + "FreeMono.ttf", 17) # flight data
         self.__lastSeenFont = pygame.font.Font(fontDir + "FreeSans.ttf", 16) # time last seen
         self.__distFont = pygame.font.Font(fontDir + "FreeSans.ttf", 14) # distance and bearing
@@ -55,20 +55,29 @@ class Display():
     def setupAdsbDisplay(self):
         self.__lcd.fill(self.__black)
         pygame.draw.rect(self.__lcd, self.__medPurple, (0,0,self.__screenWidth, self.__screenHeight), 5) # screen border
-        txt = self.__csFont.render("Acquiring...", 1, self.__yellow)
-        self.__lcd.blit(txt, ((self.__screenWidth - txt.get_width())/2, 30))
+        #txt = self.__csFont.render("Acquiring...", 1, self.__yellow)
+        #self.__lcd.blit(txt, ((self.__screenWidth - txt.get_width())/2, 30))
         pygame.display.update()
         pygame.event.clear()    # clear all initial events
 
-    def check(self):
+    def clearCallsign(self):
+        pygame.draw.rect(self.__lcd, self.__black, (5,5,self.__screenWidth-10,94))
+
+    def displayCallsign(self, cs, isMil):
+        if (isMil):
+            pygame.draw.rect(self.__lcd, self.__medRed, (5,6,self.__screenWidth-10,75))
+        txt = self.__csFont.render(cs.strip()[:8], 1, self.__yellow)
+        self.__lcd.blit(txt, ((self.__screenWidth - txt.get_width())/2, 0))
+
+    def checkTap(self):
         if (pygame.event.peek()):
             for event in pygame.event.get():
                 if(event.type == pygame.MOUSEBUTTONUP):
-                    return(pygame.mouse.get_pos())
+                    return True
                 else:
-                    return None
+                    return False
         else:
-            return None
+            return False
 
     def drawSquare(self, pos):
         pygame.draw.rect(self.__lcd, self.__red, (pos[0],pos[1],10,10))
@@ -109,21 +118,11 @@ class Display():
         txt = self.__btnFont.render("Exit", 1, self.__white)
         self.__lcd.blit(txt, (295, 222))
 
-    def clearCallsignAndID(self):
-        pygame.draw.rect(self.__lcd, self.__black, (5,3,self.__screenWidth-10,92))
-
+    
     def clearFlightData(self):
         pygame.draw.rect(self.__lcd, self.__black, (5,105,141,93))
 
-    def displayICAOid(self, id):
-        txt = self.__idFont.render(id, 1, self.__yellow)
-        self.__lcd.blit(txt, ((self.__screenWidth - txt.get_width())/2, 4))
-
-    def displayCallsign(self, cs, isMil):
-        if (isMil):
-            pygame.draw.rect(self.__lcd, self.__medRed, (5,30,self.__screenWidth-10,43))
-        txt = self.__csFont.render(cs.strip(), 1, self.__yellow)
-        self.__lcd.blit(txt, ((self.__screenWidth - txt.get_width())/2, 30))
+    
 
     def displayLastSeen(self, adsbObj):
         dateParts = adsbObj.theDate.split("/")

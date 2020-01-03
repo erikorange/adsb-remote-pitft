@@ -32,23 +32,14 @@ while True:
     data, address = sck.recvfrom(1024)
     txt = data.decode('utf-8')
     dataVals = txt.split(",")
-    ICAOid = dataVals[4]
     callsign = dataVals[10]
+
     if (callsign != ""):
-        dsp.clearCallsignAndID()
-        dsp.displayICAOid(ICAOid)
+        dsp.clearCallsign()
         dsp.displayCallsign(callsign, isMilCallsign(callsign))
         dsp.refreshDisplay()
 
-
-
-
-
-#while True:
-#    p = dsp.check()
-#    if (p is not None):
-#        dsp.drawSquare(p)
-
-
-
+    if (dsp.checkTap()):
+        sys.exit(0)
+    
 
