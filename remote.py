@@ -80,6 +80,7 @@ while True:
             dsp.displayLastSeen(adsb)
             dsp.clearDistance()
             dsp.displayFlightData(adsb, False)
+            adsb.clearLastFlightData()
             lastCallSign = currentCallsign
             lastId = currentId
             
