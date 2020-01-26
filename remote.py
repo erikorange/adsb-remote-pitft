@@ -3,9 +3,16 @@ import signal
 import time
 import re
 import socket
+import enum
 from display import Display
 from adsb import Adsb
 from util import Util
+
+class Mode(enum.Enum): 
+    CallsignOnly = 1
+    FlightNumeric = 2
+    FlightRadar = 3
+
 
 def shutdownEvent(signal, frame):
     sys.exit(0)
@@ -45,11 +52,13 @@ sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sck.bind(('', 49001))
 sck.setblocking(0)
 
-holdMode = False
+currentMode = Mode.CallsignOnly
 lastId = ''
 lastCallSign = ''
 
 adsbIdx=1
+
+dsp.defineRadarPoints(250,220,90)
 
 while True:
     try:
@@ -61,7 +70,16 @@ while True:
         currentId = adsb.ICAOid
         currentCallsign = adsb.callsign
 
-        if (holdMode and (currentId == lastId)):
+        if (currentMode == Mode.CallsignOnly and currentCallsign != ""):
+            dsp.displayCallsign(currentCallsign, isMilCallsign(currentCallsign))
+            dsp.displayLastSeen(adsb)
+            dsp.displayFlightData(adsb, False)
+
+            lastCallSign = currentCallsign
+            lastId = currentId
+
+            
+        if (currentMode == Mode.FlightNumeric and (currentId == lastId)):
             dsp.displayCallsign(lastCallSign, isMilCallsign(lastCallSign))
             dsp.displayLastSeen(adsb)
             dsp.displayFlightData(adsb, True)
@@ -75,20 +93,42 @@ while True:
             elif (not adsb.lastDist is None):
                 dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
 
-        elif (not holdMode and currentCallsign != ""):
-            dsp.displayCallsign(currentCallsign, isMilCallsign(currentCallsign))
-            dsp.displayLastSeen(adsb)
-            dsp.clearDistance()
-            dsp.displayFlightData(adsb, False)
-            adsb.clearLastFlightData()
-            lastCallSign = currentCallsign
-            lastId = currentId
-            
+        if (currentMode == Mode.FlightRadar):
+            #TODO - check if there's a dist,bearing
+
+            dsp.drawRadarLine(250, 220, 90, adsb.lastBearing, adsb.lastDist, 190)
+            #dsp.displayDistance(dist, bearing)
+
+            if (currentId == lastId):
+                if (adsb.lat != "" and adsb.lon != ""):
+                    dist = Util.haversine(HOME_LON, HOME_LAT, float(adsb.lon), float(adsb.lat)) * 0.62137 # convert km to mi
+                    bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsb.lat), float(adsb.lon))
+                    
+                    adsb.lastDist = dist
+                    adsb.lastBearing = bearing
+                elif (not adsb.lastDist is None):
+                    #remove!  maybe whole elif
+                    zzz=4
+                    #dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
+
+        #TODO - ensure this is the only update
         dsp.refreshDisplay()
   
     if (dsp.checkTap()):
-        holdMode = not holdMode
-        dsp.displayHoldMode(holdMode)
+        if (currentMode == Mode.CallsignOnly):
+            currentMode = Mode.FlightNumeric
+
+        elif (currentMode == Mode.FlightNumeric):
+            currentMode = Mode.FlightRadar
+
+        else:
+            currentMode = Mode.CallsignOnly
+            dsp.clearDistance()
+            adsb.clearLastFlightData()
+
+
+#TODO - remove?
+#dsp.displayHoldMode(holdMode)
 
     
 
