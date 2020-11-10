@@ -4,14 +4,15 @@ import time
 import re
 import socket
 import enum
+import pygame
 from display import Display
+from button import Button
 from adsb import Adsb
 from util import Util
 
 class Mode(enum.Enum): 
     CallsignOnly = 1
     FlightNumeric = 2
-    FlightRadar = 3
 
 
 def shutdownEvent(signal, frame):
@@ -37,6 +38,22 @@ def isMilCallsign(cs):
     else:
         return 0
 
+def exitSystem():
+    sys.exit(0)
+
+
+#TODO - don't make currentMode global, pass as param
+
+def holdOn():
+    global currentMode
+    currentMode = Mode.FlightNumeric
+
+def holdOff():
+    global currentMode
+    currentMode = Mode.CallsignOnly
+    dsp.clearDistance()
+    adsb.clearLastFlightData()
+
 
 signal.signal(signal.SIGTERM, shutdownEvent)
 signal.signal(signal.SIGINT, shutdownEvent)
@@ -59,6 +76,16 @@ lastCallSign = ''
 adsbIdx=1
 
 dsp.defineRadarPoints(250,220,90)
+
+medRed = (80,0,0)
+medPurple = (80, 0, 80)
+
+buttonList = []
+holdBtn = Button(dsp.lcd, 5, 400, 100, 60, dsp.btnFont, medPurple, "HOLD", holdOn, holdOff)
+buttonList.append(holdBtn)
+exitBtn = Button(dsp.lcd, 130, 400, 100, 60, dsp.btnFont, medRed, "EXIT", exitSystem, exitSystem)
+buttonList.append(exitBtn)
+pygame.display.update()
 
 while True:
     try:
@@ -93,42 +120,16 @@ while True:
             elif (not adsb.lastDist is None):
                 dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
 
-        if (currentMode == Mode.FlightRadar):
-            #TODO - check if there's a dist,bearing
-
-            dsp.drawRadarLine(250, 220, 90, adsb.lastBearing, adsb.lastDist, 190)
-            #dsp.displayDistance(dist, bearing)
-
-            if (currentId == lastId):
-                if (adsb.lat != "" and adsb.lon != ""):
-                    dist = Util.haversine(HOME_LON, HOME_LAT, float(adsb.lon), float(adsb.lat)) * 0.62137 # convert km to mi
-                    bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsb.lat), float(adsb.lon))
-                    
-                    adsb.lastDist = dist
-                    adsb.lastBearing = bearing
-                elif (not adsb.lastDist is None):
-                    #remove!  maybe whole elif
-                    zzz=4
-                    #dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
-
-        #TODO - ensure this is the only update
         dsp.refreshDisplay()
-  
-    if (dsp.checkTap()):
-        if (currentMode == Mode.CallsignOnly):
-            currentMode = Mode.FlightNumeric
+    
+    for event in pygame.event.get():
+        if event.type == pygame.FINGERUP:
+            for btn in buttonList:                
+                if btn.isSelected():
+                    btn.toggleButton()
+                    pygame.display.update()
 
-        elif (currentMode == Mode.FlightNumeric):
-            currentMode = Mode.FlightRadar
-
-        else:
-            currentMode = Mode.CallsignOnly
-            dsp.clearDistance()
-            adsb.clearLastFlightData()
-
-
-#TODO - remove?
-#dsp.displayHoldMode(holdMode)
 
     
+
 

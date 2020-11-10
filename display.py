@@ -30,6 +30,7 @@ class Display():
         pygame.mouse.set_visible(False)
         flags = FULLSCREEN | DOUBLEBUF | HWSURFACE
         self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
+        self.lcd = self.__lcd
 
     def __initFonts(self):
         fontDir="/usr/share/fonts/truetype/freefont/"
@@ -44,6 +45,7 @@ class Display():
         self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 14)
         self.__optsFont = pygame.font.Font(fontDir + "FreeSans.ttf", 17)
         self.__titleFont= pygame.font.Font(fontDir + "FreeSans.ttf", 18)
+        self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
 
 
     def __initColors(self):
