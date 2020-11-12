@@ -47,6 +47,7 @@ def exitSystem():
 def holdOn():
     global currentMode
     currentMode = Mode.FlightNumeric
+    dsp.drawRadar(640,247,120,50)
 
 def holdOff():
     global currentMode
@@ -75,15 +76,16 @@ lastCallSign = ''
 
 adsbIdx=1
 
-dsp.defineRadarPoints(250,220,90)
+
 
 medRed = (80,0,0)
-medPurple = (80, 0, 80)
+medPurple = (80,0,80)
+gray = (128,128,128)
 
 buttonList = []
-holdBtn = Button(dsp.lcd, 5, 400, 100, 60, dsp.btnFont, medPurple, "HOLD", holdOn, holdOff)
+holdBtn = Button(dsp.lcd, 5, 419, 100, 60, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff)
 buttonList.append(holdBtn)
-exitBtn = Button(dsp.lcd, 130, 400, 100, 60, dsp.btnFont, medRed, "EXIT", exitSystem, exitSystem)
+exitBtn = Button(dsp.lcd, 695, 419, 100, 60, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem)
 buttonList.append(exitBtn)
 pygame.display.update()
 
@@ -115,6 +117,7 @@ while True:
                 dist = Util.haversine(HOME_LON, HOME_LAT, float(adsb.lon), float(adsb.lat)) * 0.62137 # convert km to mi
                 bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsb.lat), float(adsb.lon))
                 dsp.displayDistance(dist, bearing)
+                dsp.drawRadarBlip(640,247,120,bearing,dist,50)
                 adsb.lastDist = dist
                 adsb.lastBearing = bearing
             elif (not adsb.lastDist is None):
