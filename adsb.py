@@ -14,6 +14,9 @@ class Adsb():
         self.lastLat = ""
         self.lastLon = ""
         self.lastAltitude = ""
+        self.lastVerticalRate = ""
+        self.lastGroundSpeed = ""
+        self.lastSquawk = ""
         
     def isValidRec(self, rec):
         if rec.count(',') == 21:

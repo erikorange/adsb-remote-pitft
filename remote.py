@@ -5,15 +5,12 @@ import re
 import socket
 import enum
 import pygame
+import collections
+
 from display import Display
 from button import Button
 from adsb import Adsb
 from util import Util
-
-class Mode(enum.Enum): 
-    CallsignOnly = 1
-    FlightNumeric = 2
-
 
 def shutdownEvent(signal, frame):
     sys.exit(0)
@@ -30,30 +27,56 @@ def getHomeLatLon(filename):
     return lat, lon
 
 
-def isMilCallsign(cs):
-    # starts with at least 4 letters, then at least 2 numbers; or starts with RCH or TOPCAT; or is GOTOFMS.  Remove spaces for VADER xx
-    match = re.search(r'(^[A-Z]{4,}[0-9]{2,}$)|(^RCH)|(^TOPCAT)|(GOTOFMS)', cs.replace(' ',''))
-    if match:
-        return 1
-    else:
-        return 0
-
 def exitSystem():
     sys.exit(0)
 
 
-#TODO - don't make currentMode global, pass as param
-
 def holdOn():
-    global currentMode
-    currentMode = Mode.FlightNumeric
-    dsp.drawRadar(640,247,120,50)
+    global holdMode, adsbObj
+    holdMode = True
+    adsbObj.clearLastFlightData()
+    dsp.drawRadar(600,205,160,110)
 
 def holdOff():
-    global currentMode
-    currentMode = Mode.CallsignOnly
-    dsp.clearDistance()
-    adsb.clearLastFlightData()
+    global holdMode, adsbObj
+    holdMode = False
+    adsbObj.clearLastCallsignID()
+
+    # what it was doing:
+    #dsp.clearDistance()
+    #adsb.clearLastFlightData()
+
+def milOn():
+    global milMode, dsp
+    milMode = True
+    dsp.clearICAOid()
+    dsp.clearCallsign()
+    dsp.clearFlightData()
+    return
+
+def milOff():
+    global milMode
+    milMode = False
+    return
+
+def bigOn():
+    return
+
+def bigOff():
+    return
+
+def dataOn():
+    return
+
+def dataOff():
+    return
+
+def addToRecents(callSign, que):
+    try:
+        x = list(que).index(callSign)
+    except ValueError:
+        que.appendleft(callSign)
+    return que
 
 
 signal.signal(signal.SIGTERM, shutdownEvent)
@@ -64,27 +87,39 @@ HOME_LAT, HOME_LON = getHomeLatLon("home-lat-lon.txt")
 
 dsp = Display()
 dsp.setupAdsbDisplay()
-adsb = Adsb()
+adsbObj = Adsb()
+
+civRecents = collections.deque(maxlen=20)
+civList = set()
+milRecents = collections.deque(maxlen=20)
+milList = set()
+holdMode = False
+milMode = False
+currentID = ''
+lastID = ''
+currentCallsign = ''
+lastCallSign = ''
+adsbIdx=1
+medRed = (80,0,0)
+medPurple = (80,0,80)
+medBlue = (0,0,80)
+gray = (128,128,128)
+darkGreen=(0,32,0)
+dataColor=(0,32,32)
 
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sck.bind(('', 49001))
 sck.setblocking(0)
 
-currentMode = Mode.CallsignOnly
-lastId = ''
-lastCallSign = ''
-
-adsbIdx=1
-
-
-
-medRed = (80,0,0)
-medPurple = (80,0,80)
-gray = (128,128,128)
-
 buttonList = []
 holdBtn = Button(dsp.lcd, 5, 419, 100, 60, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff)
 buttonList.append(holdBtn)
+milBtn = Button(dsp.lcd, 120, 419, 100, 60, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff)
+buttonList.append(milBtn)
+bigBtn = Button(dsp.lcd, 235, 419, 100, 60, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff)
+buttonList.append(bigBtn)
+dataBtn = Button(dsp.lcd, 350, 419, 100, 60, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff)
+buttonList.append(dataBtn)
 exitBtn = Button(dsp.lcd, 695, 419, 100, 60, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem)
 buttonList.append(exitBtn)
 pygame.display.update()
@@ -95,44 +130,87 @@ while True:
     except socket.error:
         pass
     else:
-        adsb.loadData(data.decode('utf-8'))
-        currentId = adsb.ICAOid
-        currentCallsign = adsb.callsign
+        adsbObj.loadData(data.decode('utf-8'))
+        currentID = adsbObj.ICAOid
+        currentCallsign = adsbObj.callsign.strip()
 
-        if (currentMode == Mode.CallsignOnly and currentCallsign != ""):
-            dsp.displayCallsign(currentCallsign, isMilCallsign(currentCallsign))
-            dsp.displayLastSeen(adsb)
-            dsp.displayFlightData(adsb, False)
+        if (currentCallsign != ""):
+            if (Util.isMilCallsign(currentCallsign)):
+                milRecents = addToRecents(currentCallsign, milRecents)
+                milList.add(currentCallsign)
+                #dsp.displayRecents(recentCallsigns)
+                #dsp.displayMilCount(len(milList))
+            else:
+                civRecents = addToRecents(currentCallsign, civRecents)
+                civList.add(currentCallsign)
+                #dsp.displayRecents(recentCallsigns)
+                #dsp.displayCivCount(len(civList))
 
-            lastCallSign = currentCallsign
-            lastId = currentId
 
-            
-        if (currentMode == Mode.FlightNumeric and (currentId == lastId)):
-            dsp.displayCallsign(lastCallSign, isMilCallsign(lastCallSign))
-            dsp.displayLastSeen(adsb)
-            dsp.displayFlightData(adsb, True)
+        gotLatLon = False
+        if (adsbObj.lat != "" and adsbObj.lon != ""):
+            gotLatLon = True
+            dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+            bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
 
-            if (adsb.lat != "" and adsb.lon != ""):
-                dist = Util.haversine(HOME_LON, HOME_LAT, float(adsb.lon), float(adsb.lat)) * 0.62137 # convert km to mi
-                bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsb.lat), float(adsb.lon))
+
+        if (holdMode and (currentID == lastID)):
+            dsp.clearICAOid()
+            dsp.clearCallsign()
+            dsp.clearFlightData()
+            dsp.displayICAOid(lastID)
+            dsp.displayCallsign(lastCallSign, Util.isMilCallsign(lastCallSign))
+            dsp.displayLastSeen(adsbObj)
+            dsp.displayFlightData(adsbObj, True)
+
+            if (gotLatLon):
                 dsp.displayDistance(dist, bearing)
-                dsp.drawRadarBlip(640,247,120,bearing,dist,50)
-                adsb.lastDist = dist
-                adsb.lastBearing = bearing
-            elif (not adsb.lastDist is None):
-                dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
+                dsp.drawRadarBlip(600,205,160,bearing,dist,110)
+                adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
+            elif (not adsbObj.lastDist is None):
+                dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
 
-        dsp.refreshDisplay()
-    
+        elif (not holdMode and ((not milMode and currentCallsign != "") or (milMode and Util.isMilCallsign(currentCallsign)))):
+            dsp.clearICAOid()
+            dsp.clearCallsign()
+            dsp.displayICAOid(currentID)
+            dsp.displayCallsign(currentCallsign, Util.isMilCallsign(currentCallsign))
+            dsp.displayLastSeen(adsbObj)
+            dsp.displayFlightData(adsbObj, False)
+            lastCallSign = currentCallsign
+            lastID = currentID
+
     for event in pygame.event.get():
         if event.type == pygame.FINGERUP:
             for btn in buttonList:                
                 if btn.isSelected():
                     btn.toggleButton()
-                    pygame.display.update()
+
+    dsp.refreshDisplay()
 
 
-    
-
-
+#   WAS NORMAL MODE
+#        if (currentMode == Mode.CallsignOnly and currentCallsign != ""):
+#            dsp.displayCallsign(currentCallsign, Util.isMilCallsign(currentCallsign))
+#            dsp.displayLastSeen(adsb)
+#            dsp.displayFlightData(adsb, False)
+#
+#            lastCallSign = currentCallsign
+#            lastId = currentId
+#
+#
+#   WAS HOLD MODE            
+#        if (currentMode == Mode.FlightNumeric and (currentId == lastId)):
+#            dsp.displayCallsign(lastCallSign, Util.isMilCallsign(lastCallSign))
+#            dsp.displayLastSeen(adsb)
+#            dsp.displayFlightData(adsb, True)
+#
+#            if (adsb.lat != "" and adsb.lon != ""):
+#                dist = Util.haversine(HOME_LON, HOME_LAT, float(adsb.lon), float(adsb.lat)) * 0.62137 # convert km to mi
+#                bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsb.lat), float(adsb.lon))
+#                dsp.displayDistance(dist, bearing)
+#                dsp.drawRadarBlip(640,247,120,bearing,dist,50)
+#                adsb.lastDist = dist
+#                adsb.lastBearing = bearing
+#            elif (not adsb.lastDist is None):
+#                dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
