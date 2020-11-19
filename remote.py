@@ -35,16 +35,18 @@ def holdOn():
     global holdMode, adsbObj
     holdMode = True
     adsbObj.clearLastFlightData()
-    dsp.drawRadar(600,205,160,110)
+    dsp.drawRadar(600,195,165,110)
 
 def holdOff():
     global holdMode, adsbObj
     holdMode = False
+    # Why clear this?
     adsbObj.clearLastCallsignID()
-
-    # what it was doing:
-    #dsp.clearDistance()
-    #adsb.clearLastFlightData()
+    adsbObj.clearLastFlightData()
+    dsp.clearDistance()
+    dsp.clearFlightData()
+    dsp.clearRadar()
+    
 
 def milOn():
     global milMode, dsp
@@ -147,13 +149,6 @@ while True:
                 #dsp.displayCivCount(len(civList))
 
 
-        gotLatLon = False
-        if (adsbObj.lat != "" and adsbObj.lon != ""):
-            gotLatLon = True
-            dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-            bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-
-
         if (holdMode and (currentID == lastID)):
             dsp.clearICAOid()
             dsp.clearCallsign()
@@ -163,9 +158,11 @@ while True:
             dsp.displayLastSeen(adsbObj)
             dsp.displayFlightData(adsbObj, True)
 
-            if (gotLatLon):
+            if (adsbObj.lat != "" and adsbObj.lon != ""):
+                dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
                 dsp.displayDistance(dist, bearing)
-                dsp.drawRadarBlip(600,205,160,bearing,dist,110)
+                dsp.drawRadarBlip(bearing,dist)
                 adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
             elif (not adsbObj.lastDist is None):
                 dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
