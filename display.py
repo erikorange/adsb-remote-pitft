@@ -35,11 +35,12 @@ class Display():
         self.__lastSeenFont = pygame.font.Font(fontDir + "FreeSans.ttf", 25) # time last seen
         self.__distFont = pygame.font.Font(fontDir + "FreeSans.ttf", 40) # distance and bearing
         self.__btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 13)
-        self.__recentFont= pygame.font.Font(fontDir + "FreeSans.ttf", 13)
+        self.__recentFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
         self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 14)
         self.__optsFont = pygame.font.Font(fontDir + "FreeSans.ttf", 17)
         self.__titleFont= pygame.font.Font(fontDir + "FreeSans.ttf", 18)
         self.__radarFont = pygame.font.Font(fontDir + "FreeSans.ttf", 20)
+        self.__recentHeaderFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
         self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
 
     def __initColors(self):
@@ -57,7 +58,66 @@ class Display():
         self.__white = (255,255,255)
         self.__gray = (128,128,128)
         self.__red = (255,0,0)
+        self.__blue = (0,0,255)
 
+    def drawRecentsPane(self):
+        ctrX = self.__screenWidth/2 + self.__screenWidth/4
+        ctrTop = 30
+        ctrBottom = 400
+        leftEdge = self.__screenWidth/2+20
+        rightEdge = self.__screenWidth-20
+        horizLineY = 70
+        pygame.draw.line(self.__lcd, self.__blue, (ctrX,ctrTop), (ctrX,ctrBottom), width=1)
+        pygame.draw.line(self.__lcd, self.__blue, (leftEdge,horizLineY), (rightEdge,horizLineY), width=1)
+
+        txt = self.__recentHeaderFont.render("Civilian", 1, self.__white)
+        txtCenterX = leftEdge + (ctrX-leftEdge)/2
+        txtCenterY = ctrTop + 15
+        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
+        self.__lcd.blit(txt, txtRect)
+
+        txt = self.__recentHeaderFont.render("Military", 1, self.__white)
+        txtCenterX = ctrX + (rightEdge-ctrX)/2
+        txtCenterY = ctrTop + 15
+        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
+        self.__lcd.blit(txt, txtRect)
+
+    def displayCivRecents(self, recentCs):
+        xpos = 461
+        yAnchor = 75
+        ypos = yAnchor
+        ctrX = self.__screenWidth/2 + self.__screenWidth/4
+        leftEdge = self.__screenWidth/2+20
+        pygame.draw.rect(self.__lcd, self.__black, (420,yAnchor,ctrX-leftEdge-1,322))
+        foreColor = self.__mediumBlue
+        backColor = self.__black
+        for x in range(0, len(recentCs)):
+            cs = recentCs[x]
+            txt = self.__recentFont.render(cs[:8], 1, foreColor, backColor)
+            self.__lcd.blit(txt, (xpos, ypos))
+            ypos += 32
+    
+    def displayMilRecents(self, recentCs):
+        xpos = 641
+        yAnchor = 75
+        ypos = yAnchor
+        ctrX = self.__screenWidth/2 + self.__screenWidth/4
+        pygame.draw.rect(self.__lcd, self.__black, (603,yAnchor,self.__screenWidth-20-ctrX,322))
+        foreColor = self.__yellow
+        backColor = self.__medRed
+        for x in range(0, len(recentCs)):
+            cs = recentCs[x]
+            txt = self.__recentFont.render(cs[:8], 1, foreColor, backColor)
+            self.__lcd.blit(txt, (xpos, ypos))
+            ypos += 32
+
+    def clearRecentsPane(self):
+        x = self.__screenWidth/2+20
+        y = 30
+        w = self.__screenWidth-19 - x
+        h = 370
+        pygame.draw.rect(self.__lcd, self.__black, (x,y,w,h))
+        
     def setupAdsbDisplay(self):
         self.__lcd.fill(self.__black)
         pygame.display.update()
@@ -83,15 +143,18 @@ class Display():
         pygame.draw.rect(self.__lcd, self.__black, (0,43,self.__screenWidth/2,55))
 
     def displayLastSeen(self, adsbObj):
-        ypos = 105
-        pygame.draw.rect(self.__lcd, self.__black, (0,ypos,self.__screenWidth/2,30))
+        self.clearLastSeen()
         dateParts = adsbObj.theDate.split("/")
         formattedDate = dateParts[1] + "-" + dateParts[2] + "-" + dateParts[0]
         formattedTime = adsbObj.theTime.split(".")[0]
         txt = self.__lastSeenFont.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, self.__cyan)
         xpos = ((self.__screenWidth/2) - txt.get_width())/2
-        self.__lcd.blit(txt, (xpos, ypos))
+        self.__lcd.blit(txt, (xpos, 105))
 
+    def clearLastSeen(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,105,self.__screenWidth/2,30))
+
+        
     def displayFlightData(self, adsbObj, persist):
         self.clearFlightData()
         altitude = adsbObj.altitude
@@ -277,10 +340,10 @@ class Display():
 
             #overwrite the old blip, if there is one
             if ((self.__oldPlotX != 0) & (self.__oldPlotY != 0)):
-                pygame.draw.circle(self.__lcd, (200,0,200), (self.__radarX+int(self.__oldPlotX),self.__radarY+int(self.__oldPlotY)), 2)
+                pygame.draw.circle(self.__lcd, self.__darkOrange, (self.__radarX+int(self.__oldPlotX),self.__radarY+int(self.__oldPlotY)), 2)
                 
             #plot the blip
-            pygame.draw.circle(self.__lcd, (255,255,0), (self.__radarX+int(plotX),self.__radarY+int(plotY)), 2)
+            pygame.draw.circle(self.__lcd, self.__green, (self.__radarX+int(plotX),self.__radarY+int(plotY)), 2)
             self.__oldPlotX = plotX
             self.__oldPlotY = plotY
 

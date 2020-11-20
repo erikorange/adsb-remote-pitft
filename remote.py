@@ -35,6 +35,8 @@ def holdOn():
     global holdMode, adsbObj
     holdMode = True
     adsbObj.clearLastFlightData()
+    dsp.clearLastSeen()
+    dsp.clearRecentsPane()
     dsp.drawRadar(600,195,165,110)
 
 def holdOff():
@@ -46,6 +48,9 @@ def holdOff():
     dsp.clearDistance()
     dsp.clearFlightData()
     dsp.clearRadar()
+    dsp.drawRecentsPane()
+    dsp.displayCivRecents(civRecents)
+    dsp.displayMilRecents(milRecents)
     
 
 def milOn():
@@ -54,6 +59,7 @@ def milOn():
     dsp.clearICAOid()
     dsp.clearCallsign()
     dsp.clearFlightData()
+    dsp.clearLastSeen()
     return
 
 def milOff():
@@ -91,9 +97,9 @@ dsp = Display()
 dsp.setupAdsbDisplay()
 adsbObj = Adsb()
 
-civRecents = collections.deque(maxlen=20)
+civRecents = collections.deque(maxlen=10)
 civList = set()
-milRecents = collections.deque(maxlen=20)
+milRecents = collections.deque(maxlen=10)
 milList = set()
 holdMode = False
 milMode = False
@@ -112,6 +118,8 @@ dataColor=(0,32,32)
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sck.bind(('', 49001))
 sck.setblocking(0)
+
+dsp.drawRecentsPane()
 
 buttonList = []
 holdBtn = Button(dsp.lcd, 5, 419, 100, 60, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff)
@@ -139,13 +147,15 @@ while True:
         if (currentCallsign != ""):
             if (Util.isMilCallsign(currentCallsign)):
                 milRecents = addToRecents(currentCallsign, milRecents)
-                milList.add(currentCallsign)
-                #dsp.displayRecents(recentCallsigns)
+                milList.add((currentID, currentCallsign))
+                if (not holdMode):
+                    dsp.displayMilRecents(milRecents)
                 #dsp.displayMilCount(len(milList))
             else:
                 civRecents = addToRecents(currentCallsign, civRecents)
-                civList.add(currentCallsign)
-                #dsp.displayRecents(recentCallsigns)
+                civList.add((currentID, currentCallsign))
+                if (not holdMode):
+                    dsp.displayCivRecents(civRecents)
                 #dsp.displayCivCount(len(civList))
 
 
