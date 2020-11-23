@@ -38,9 +38,11 @@ def holdOn():
     dsp.clearLastSeen()
     dsp.clearRecentsPane()
     dsp.drawRadar(600,195,165,110)
+    if (not milMode):
+        milBtn.disableButton()
 
 def holdOff():
-    global holdMode, adsbObj
+    global holdMode, adsbObj, currentCallsign
     holdMode = False
     # Why clear this?
     adsbObj.clearLastCallsignID()
@@ -49,10 +51,11 @@ def holdOff():
     dsp.clearFlightData()
     dsp.clearRadar()
     dsp.drawRecentsPane()
-    dsp.displayCivRecents(civRecents)
-    dsp.displayMilRecents(milRecents)
+    dsp.displayCivRecents(civRecents, currentCallsign)
+    dsp.displayMilRecents(milRecents, currentCallsign)
+    if (not milMode):
+        milBtn.drawButton(False)
     
-
 def milOn():
     global milMode, dsp
     milMode = True
@@ -107,7 +110,8 @@ currentID = ''
 lastID = ''
 currentCallsign = ''
 lastCallSign = ''
-adsbIdx=1
+adsbCount=0
+
 medRed = (80,0,0)
 medPurple = (80,0,80)
 medBlue = (0,0,80)
@@ -122,15 +126,15 @@ sck.setblocking(0)
 dsp.drawRecentsPane()
 
 buttonList = []
-holdBtn = Button(dsp.lcd, 5, 419, 100, 60, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff)
+holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff)
 buttonList.append(holdBtn)
-milBtn = Button(dsp.lcd, 120, 419, 100, 60, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff)
+milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff)
 buttonList.append(milBtn)
-bigBtn = Button(dsp.lcd, 235, 419, 100, 60, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff)
+bigBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff)
 buttonList.append(bigBtn)
-dataBtn = Button(dsp.lcd, 350, 419, 100, 60, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff)
+dataBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff)
 buttonList.append(dataBtn)
-exitBtn = Button(dsp.lcd, 695, 419, 100, 60, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem)
+exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem)
 buttonList.append(exitBtn)
 pygame.display.update()
 
@@ -143,21 +147,23 @@ while True:
         adsbObj.loadData(data.decode('utf-8'))
         currentID = adsbObj.ICAOid
         currentCallsign = adsbObj.callsign.strip()
+        adsbCount += 1
 
         if (currentCallsign != ""):
             if (Util.isMilCallsign(currentCallsign)):
                 milRecents = addToRecents(currentCallsign, milRecents)
                 milList.add((currentID, currentCallsign))
                 if (not holdMode):
-                    dsp.displayMilRecents(milRecents)
+                    dsp.displayMilRecents(milRecents, currentCallsign)
                 #dsp.displayMilCount(len(milList))
             else:
                 civRecents = addToRecents(currentCallsign, civRecents)
                 civList.add((currentID, currentCallsign))
                 if (not holdMode):
-                    dsp.displayCivRecents(civRecents)
+                    dsp.displayCivRecents(civRecents, currentCallsign)
                 #dsp.displayCivCount(len(civList))
 
+        #dsp.updateCallsignCount(adsbCount, len(civList), len(milList))
 
         if (holdMode and (currentID == lastID)):
             dsp.clearICAOid()
@@ -190,7 +196,7 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.FINGERUP:
             for btn in buttonList:                
-                if btn.isSelected():
+                if (btn.isSelected() and (not btn.disabled)):
                     btn.toggleButton()
 
     dsp.refreshDisplay()
