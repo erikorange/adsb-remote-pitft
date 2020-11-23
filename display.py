@@ -36,7 +36,7 @@ class Display():
         self.__distFont = pygame.font.Font(fontDir + "FreeSans.ttf", 40) # distance and bearing
         self.__btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 13)
         self.__recentFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
-        self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 14)
+        self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
         self.__optsFont = pygame.font.Font(fontDir + "FreeSans.ttf", 17)
         self.__titleFont= pygame.font.Font(fontDir + "FreeSans.ttf", 18)
         self.__radarFont = pygame.font.Font(fontDir + "FreeSans.ttf", 20)
@@ -82,31 +82,41 @@ class Display():
         txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
         self.__lcd.blit(txt, txtRect)
 
-    def displayCivRecents(self, recentCs):
+    def displayCivRecents(self, recentCs, currentCs):
         xpos = 461
         yAnchor = 75
         ypos = yAnchor
         ctrX = self.__screenWidth/2 + self.__screenWidth/4
         leftEdge = self.__screenWidth/2+20
         pygame.draw.rect(self.__lcd, self.__black, (420,yAnchor,ctrX-leftEdge-1,322))
-        foreColor = self.__mediumBlue
-        backColor = self.__black
         for x in range(0, len(recentCs)):
             cs = recentCs[x]
+            if (currentCs == cs):
+                foreColor = self.__white
+                backColor = self.__blue
+            else:
+                foreColor = self.__mediumBlue
+                backColor = self.__black
+
             txt = self.__recentFont.render(cs[:8], 1, foreColor, backColor)
             self.__lcd.blit(txt, (xpos, ypos))
             ypos += 32
     
-    def displayMilRecents(self, recentCs):
+    def displayMilRecents(self, recentCs, currentCs):
         xpos = 641
         yAnchor = 75
         ypos = yAnchor
         ctrX = self.__screenWidth/2 + self.__screenWidth/4
         pygame.draw.rect(self.__lcd, self.__black, (603,yAnchor,self.__screenWidth-20-ctrX,322))
-        foreColor = self.__yellow
-        backColor = self.__medRed
         for x in range(0, len(recentCs)):
             cs = recentCs[x]
+            if (currentCs == cs):
+                foreColor = self.__white
+                backColor = self.__blue
+            else:
+                foreColor = self.__yellow
+                backColor = self.__medRed
+
             txt = self.__recentFont.render(cs[:8], 1, foreColor, backColor)
             self.__lcd.blit(txt, (xpos, ypos))
             ypos += 32
@@ -229,17 +239,22 @@ class Display():
         y = cY + radius * math.sin(math.radians(angle))
         return(int(x),int(y))
 
-    def updateCallsignCount(self, civCnt, milCnt):
-        pygame.draw.rect(self.__lcd, self.__black, (3,203,143,16))
-        lab = self.__statsFont.render("civ:", 1, self.__cyan)
-        self.__lcd.blit(lab, (5,203))
-        num = self.__statsFont.render("{:,}".format(civCnt), 1, self.__white)
-        self.__lcd.blit(num, (5 + lab.get_width() + 1,203))
+    def updateCallsignCount(self, adsbCnt,civCnt, milCnt):
+        pygame.draw.rect(self.__lcd, self.__black, (0,391,self.__screenWidth/2,31))
+        xpos = 0
+        civLab = self.__statsFont.render("civ:", 1, self.__cyan)
+        self.__lcd.blit(civLab, (xpos,393))
+        civNum = self.__statsFont.render("{:,}".format(civCnt), 1, self.__white)
+        xpos = xpos + civLab.get_width()+6
+        self.__lcd.blit(civNum, (xpos,393))
 
-        lab = self.__statsFont.render("mil:", 1, self.__cyan)
-        self.__lcd.blit(lab, (79,203))
-        num = self.__statsFont.render("{:,}".format(milCnt), 1, self.__white)
-        self.__lcd.blit(num, (79 + lab.get_width() + 1,203))
+        civRect = civNum.get_rect()
+        xpos = xpos + civRect.right + 60
+        milLab = self.__statsFont.render("mil:", 1, self.__cyan)
+        self.__lcd.blit(milLab, (xpos,393))
+        milNum = self.__statsFont.render("{:,}".format(milCnt), 1, self.__white)
+        xpos = xpos + milLab.get_width()+6
+        self.__lcd.blit(milNum, (xpos,393))
 
     def refreshDisplay(self):
         pygame.display.update()
