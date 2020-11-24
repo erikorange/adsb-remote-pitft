@@ -12,6 +12,16 @@ from button import Button
 from adsb import Adsb
 from util import Util
 
+class State(enum.Enum): 
+    CIV_MIL = 1
+    CIV_MIL_HOLD = 2
+    CIV_MIL_BIG = 3
+    MIL_ONLY = 4
+    MIL_ONLY_HOLD = 5
+    MIL_ONLY_BIG = 6
+    STATS = 7
+
+
 def shutdownEvent(signal, frame):
     sys.exit(0)
 
@@ -32,28 +42,26 @@ def exitSystem():
 
 
 def holdOn():
-    global holdMode, adsbObj
-    holdMode = True
-    adsbObj.clearLastFlightData()
-    dsp.clearLastSeen()
-    dsp.clearRecentsPane()
-    dsp.drawRadar(600,195,165,110)
-    if (not milMode):
+    global curState, adsbObj
+    if (curState == State.CIV_MIL):
+        curState = State.CIV_MIL_HOLD
+        adsbObj.clearLastFlightData()
+        dsp.clearLastSeen()
+        dsp.clearRecentsPane()
+        dsp.drawRadar(600,195,165,110)
         milBtn.disableButton()
 
 def holdOff():
-    global holdMode, adsbObj, currentCallsign
-    holdMode = False
-    # Why clear this?
-    adsbObj.clearLastCallsignID()
-    adsbObj.clearLastFlightData()
-    dsp.clearDistance()
-    dsp.clearFlightData()
-    dsp.clearRadar()
-    dsp.drawRecentsPane()
-    dsp.displayCivRecents(civRecents, currentCallsign)
-    dsp.displayMilRecents(milRecents, currentCallsign)
-    if (not milMode):
+    global curState, adsbObj, currentCallsign
+    if (curState == State.CIV_MIL_HOLD):
+        adsbObj.clearLastCallsignID()
+        adsbObj.clearLastFlightData()
+        dsp.clearDistance()
+        dsp.clearFlightData()
+        dsp.clearRadar()
+        dsp.drawRecentsPane()
+        dsp.displayCivRecents(civRecents, currentCallsign)
+        dsp.displayMilRecents(milRecents, currentCallsign)
         milBtn.drawButton(False)
     
 def milOn():
@@ -110,7 +118,10 @@ currentID = ''
 lastID = ''
 currentCallsign = ''
 lastCallSign = ''
+isMilCallSign = False
 adsbCount=0
+curState = State.CIV_MIL
+
 
 medRed = (80,0,0)
 medPurple = (80,0,80)
@@ -145,53 +156,65 @@ while True:
         pass
     else:
         adsbObj.loadData(data.decode('utf-8'))
+        adsbCount += 1
         currentID = adsbObj.ICAOid
         currentCallsign = adsbObj.callsign.strip()
-        adsbCount += 1
-
+    
         if (currentCallsign != ""):
+
             if (Util.isMilCallsign(currentCallsign)):
+                isMilCallSign = True
                 milRecents = addToRecents(currentCallsign, milRecents)
                 milList.add((currentID, currentCallsign))
-                if (not holdMode):
-                    dsp.displayMilRecents(milRecents, currentCallsign)
-                #dsp.displayMilCount(len(milList))
             else:
+                isMilCallSign = False
                 civRecents = addToRecents(currentCallsign, civRecents)
                 civList.add((currentID, currentCallsign))
-                if (not holdMode):
-                    dsp.displayCivRecents(civRecents, currentCallsign)
-                #dsp.displayCivCount(len(civList))
 
-        #dsp.updateCallsignCount(adsbCount, len(civList), len(milList))
 
-        if (holdMode and (currentID == lastID)):
-            dsp.clearICAOid()
-            dsp.clearCallsign()
-            dsp.clearFlightData()
-            dsp.displayICAOid(lastID)
-            dsp.displayCallsign(lastCallSign, Util.isMilCallsign(lastCallSign))
-            dsp.displayLastSeen(adsbObj)
-            dsp.displayFlightData(adsbObj, True)
+            if (curState == State.CIV_MIL):
+                dsp.clearICAOid()
+                dsp.clearCallsign()
+                dsp.displayICAOid(currentID)
+                dsp.displayCallsign(currentCallsign, isMilCallSign)
+                dsp.displayLastSeen(adsbObj)
+                dsp.displayFlightData(adsbObj, False)
+                dsp.displayCivRecents(civRecents, currentCallsign)
+                lastCallSign = currentCallsign
+                lastID = currentID
 
-            if (adsbObj.lat != "" and adsbObj.lon != ""):
-                dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-                bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-                dsp.displayDistance(dist, bearing)
-                dsp.drawRadarBlip(bearing,dist)
-                adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
-            elif (not adsbObj.lastDist is None):
-                dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
+            if (curState == State.MIL_ONLY):
+                if (isMilCallSign):
+                    dsp.clearICAOid()
+                    dsp.clearCallsign()
+                    dsp.displayICAOid(currentID)
+                    dsp.displayCallsign(currentCallsign, isMilCallSign)
+                    dsp.displayLastSeen(adsbObj)
+                    dsp.displayFlightData(adsbObj, False)
+                    dsp.displayMilRecents(milRecents, currentCallsign)
+                    lastCallSign = currentCallsign
+                    lastID = currentID
 
-        elif (not holdMode and ((not milMode and currentCallsign != "") or (milMode and Util.isMilCallsign(currentCallsign)))):
-            dsp.clearICAOid()
-            dsp.clearCallsign()
-            dsp.displayICAOid(currentID)
-            dsp.displayCallsign(currentCallsign, Util.isMilCallsign(currentCallsign))
-            dsp.displayLastSeen(adsbObj)
-            dsp.displayFlightData(adsbObj, False)
-            lastCallSign = currentCallsign
-            lastID = currentID
+
+            if ((curState == State.CIV_MIL_HOLD) or (curState == State.MIL_ONLY_HOLD and isMilCallSign)):
+                if (currentID == lastID):
+                    dsp.clearICAOid()
+                    dsp.clearCallsign()
+                    dsp.clearFlightData()
+                    dsp.displayICAOid(lastID)
+                    dsp.displayCallsign(lastCallSign, Util.isMilCallsign(lastCallSign))
+                    dsp.displayLastSeen(adsbObj)
+                    dsp.displayFlightData(adsbObj, True)
+
+                    if (adsbObj.lat != "" and adsbObj.lon != ""):
+                        dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                        bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                        dsp.displayDistance(dist, bearing)
+                        dsp.drawRadarBlip(bearing,dist)
+                        adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
+                    elif (not adsbObj.lastDist is None):
+                        dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
+
 
     for event in pygame.event.get():
         if event.type == pygame.FINGERUP:
@@ -200,30 +223,3 @@ while True:
                     btn.toggleButton()
 
     dsp.refreshDisplay()
-
-
-#   WAS NORMAL MODE
-#        if (currentMode == Mode.CallsignOnly and currentCallsign != ""):
-#            dsp.displayCallsign(currentCallsign, Util.isMilCallsign(currentCallsign))
-#            dsp.displayLastSeen(adsb)
-#            dsp.displayFlightData(adsb, False)
-#
-#            lastCallSign = currentCallsign
-#            lastId = currentId
-#
-#
-#   WAS HOLD MODE            
-#        if (currentMode == Mode.FlightNumeric and (currentId == lastId)):
-#            dsp.displayCallsign(lastCallSign, Util.isMilCallsign(lastCallSign))
-#            dsp.displayLastSeen(adsb)
-#            dsp.displayFlightData(adsb, True)
-#
-#            if (adsb.lat != "" and adsb.lon != ""):
-#                dist = Util.haversine(HOME_LON, HOME_LAT, float(adsb.lon), float(adsb.lat)) * 0.62137 # convert km to mi
-#                bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsb.lat), float(adsb.lon))
-#                dsp.displayDistance(dist, bearing)
-#                dsp.drawRadarBlip(640,247,120,bearing,dist,50)
-#                adsb.lastDist = dist
-#                adsb.lastBearing = bearing
-#            elif (not adsb.lastDist is None):
-#                dsp.displayDistance(adsb.lastDist, adsb.lastBearing)
