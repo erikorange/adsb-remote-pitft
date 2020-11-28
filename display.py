@@ -43,6 +43,7 @@ class Display():
         self.__radarFont = pygame.font.Font(fontDir + "FreeSans.ttf", 20)
         self.__recentHeaderFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
         self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
+        self.btnRadarFont = pygame.font.Font(fontDir + "FreeMono.ttf", 50)
 
     def __initColors(self):
         self.__green = (0,255,0)
@@ -355,13 +356,12 @@ class Display():
     def clearRadar(self):
         pygame.draw.rect(self.__lcd, self.__black, (400,0,400,416))
 
-    def drawRadarBlip(self,blipAngle,blipDistance):
+    def drawRadarBlip(self, blipDistance, blipAngle):
         if ((blipDistance != self.__oldBlipDistance) | (blipAngle != self.__oldBlipAngle)):
             self.__oldBlipAngle = blipAngle
             self.__oldBlipDistance = blipDistance
-            if (blipDistance > self.__maxBlipDistance-1):
-                #TODO - store in array, but don't plot (return?)
-                blipDistance = self.__maxBlipDistance-1
+            if (blipDistance > self.__maxBlipDistance):
+                return False
 
             #transform blip distance proportionally from mileage to circle radius
             blipRatio=self.__maxBlipDistance/self.__radarRadius
@@ -382,4 +382,6 @@ class Display():
             pygame.draw.circle(self.__lcd, self.__green, (self.__radarX+int(plotX),self.__radarY+int(plotY)), 2)
             self.__oldPlotX = plotX
             self.__oldPlotY = plotY
+
+            return True
 

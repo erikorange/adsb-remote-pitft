@@ -41,8 +41,31 @@ def exitSystem():
     sys.exit(0)
 
 
+def zoomIn():
+    global posList, radarScale
+    radarScale = radarScale - 5
+    if (radarScale < 5):
+        radarScale = 5
+    
+    dsp.clearRadar()
+    dsp.drawRadar(600,195,165,radarScale)
+    for coord in posList:
+        dsp.drawRadarBlip(coord[2], coord[3])
+
+def zoomOut():
+    global posList, radarScale
+    radarScale = radarScale + 10
+    if (radarScale > 150):
+        radarScale = 150
+    
+    dsp.clearRadar()
+    dsp.drawRadar(600,195,165,radarScale)
+    for coord in posList:
+        dsp.drawRadarBlip(coord[2], coord[3])
+
+
 def holdOn():
-    global curState
+    global curState, posList, radarScale
     if (curState == State.CIV_MIL):
         milBtn.drawButton(Button.State.DISABLED)
         curState = State.CIV_MIL_HOLD
@@ -50,10 +73,15 @@ def holdOn():
     elif (curState == State.MIL_ONLY):
         curState = State.MIL_ONLY_HOLD
 
+    plusBtn.drawButton(Button.State.ON)
+    minusBtn.drawButton(Button.State.ON)
+
     adsbObj.clearLastFlightData()
     dsp.clearLastSeen()
     dsp.clearRecentsPane()
-    dsp.drawRadar(600,195,165,110)
+    radarScale = 110
+    dsp.drawRadar(600,195,165,radarScale)
+    posList=[]
     
 def holdOff():
     global curState, adsbObj, currentCallsign
@@ -63,6 +91,9 @@ def holdOff():
 
     elif (curState == State.MIL_ONLY_HOLD):
         curState = State.MIL_ONLY
+
+    plusBtn.drawButton(Button.State.HIDDEN)
+    minusBtn.drawButton(Button.State.HIDDEN)
 
     adsbObj.clearLastCallsignID()
     adsbObj.clearLastFlightData()
@@ -132,6 +163,8 @@ lastID = ''
 currentCallsign = ''
 lastCallsign = ''
 lastSeen = ()
+posList=[]
+radarScale=50
 hasCallsign = False
 isMilCallsign = False
 adsbCount=0
@@ -144,6 +177,7 @@ medBlue = (0,0,80)
 gray = (128,128,128)
 darkGreen=(0,32,0)
 dataColor=(0,32,32)
+white=(255,255,255)
 
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sck.bind(('', 49001))
@@ -152,16 +186,21 @@ sck.setblocking(0)
 dsp.drawRecentsPane()
 
 buttonList = []
-holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff, Button.State.OFF)
+holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(holdBtn)
-milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff, Button.State.OFF)
+milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(milBtn)
-bigBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff, Button.State.OFF)
+bigBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(bigBtn)
-dataBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff, Button.State.OFF)
+dataBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(dataBtn)
-exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem, Button.State.OFF)
+exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(exitBtn)
+plusBtn = Button(dsp.lcd, 545, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "+", zoomOut, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+buttonList.append(plusBtn)
+minusBtn = Button(dsp.lcd, 605, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "-", zoomIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+buttonList.append(minusBtn)
+
 pygame.display.update()
 
 while True:
@@ -213,7 +252,8 @@ while True:
                 dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
                 bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
                 dsp.displayDistance(dist, bearing)
-                dsp.drawRadarBlip(bearing,dist)
+                dsp.drawRadarBlip(dist, bearing)
+                posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
                 adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
             elif (not adsbObj.lastDist is None):
                 dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
@@ -227,7 +267,11 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.FINGERUP:
             for btn in buttonList:                
-                if (btn.isSelected() and (not btn.isDisabled())):
-                    btn.toggleButton()
+                if (btn.isSelected() and (not (btn.isDisabled() or btn.isHidden()))):
+                    if (btn.getType() == Button.Type.STICKY):
+                        btn.toggleButton()
+
+                    if (btn.getType() == Button.Type.MOMENTARY):
+                        btn.pushButton()
 
     dsp.refreshDisplay()
