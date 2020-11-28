@@ -1,8 +1,14 @@
 import pygame
+import enum
 
 class Button():
-    def __init__(self, screen, posX, posY, sizeX, sizeY, font, btnColor, textColor, text, onCallback, offCallback):
 
+    class State(enum.Enum): 
+        ON = 1
+        OFF = 2
+        DISABLED = 3
+
+    def __init__(self, screen, posX, posY, sizeX, sizeY, font, btnColor, textColor, text, onCallback, offCallback, initialState):
         self.__screen = screen
         self.__posX = posX
         self.__posY = posY
@@ -17,20 +23,20 @@ class Button():
         self.__text = text
         self.__onCallback = onCallback
         self.__offCallback = offCallback
-        self.__state = False
-        self.disabled = False
-        self.drawButton(self.__state)
+        self.drawButton(initialState)
 
     def drawButton(self, state):
-        self.disabled = False
-        if (state):
+        if (state == self.State.ON):
+            self.__state = self.State.ON
             self.__renderButton(self.__btnColorOn, self.__textColorOn)
-        else:
+        
+        if (state == self.State.OFF):
+            self.__state = self.State.OFF
             self.__renderButton(self.__btnColorOff, self.__textColorOff)
 
-    def disableButton(self):
-        self.disabled = True
-        self.__renderButton(self.__btnColorDisabled, self.__textColorOff)
+        if (state == self.State.DISABLED):
+            self.__state = self.State.DISABLED
+            self.__renderButton(self.__btnColorDisabled, self.__textColorOff)
 
     def __renderButton(self, bgColor, txtColor):
         self.__buttonRect = pygame.draw.rect(self.__screen, bgColor, (self.__posX, self.__posY, self.__sizeX, self.__sizeY), border_radius=10)
@@ -41,12 +47,18 @@ class Button():
         self.__screen.blit(txt, txtRect)
 
     def toggleButton(self):
-        self.__state = not (self.__state)
-        self.drawButton(self.__state)
-        if (self.__state):
+        if (self.__state == self.State.OFF):
+            self.drawButton(self.State.ON)
             self.__onCallback()
         else:
+            self.drawButton(self.State.OFF)
             self.__offCallback()
+
+    def isDisabled(self):
+        if (self.__state == self.State.DISABLED):
+            return True
+        else:
+            return False
 
     def isSelected(self):
         return self.__buttonRect.collidepoint(pygame.mouse.get_pos())
