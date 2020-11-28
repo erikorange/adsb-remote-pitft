@@ -2,6 +2,7 @@ import os
 import pygame
 from pygame.locals import *
 import math
+import datetime
 from util import Util
 
 class Display():
@@ -152,12 +153,31 @@ class Display():
     def clearCallsign(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,43,self.__screenWidth/2,55))
 
-    def displayLastSeen(self, adsbObj):
-        self.clearLastSeen()
-        dateParts = adsbObj.theDate.split("/")
+    def displayLastSeen(self, lastSeen):
+        # check if lastSeen hasn't been populated yet upon startup
+        if (not lastSeen):
+            return
+
+        dateParts = lastSeen[0].split("/")
         formattedDate = dateParts[1] + "-" + dateParts[2] + "-" + dateParts[0]
-        formattedTime = adsbObj.theTime.split(".")[0]
-        txt = self.__lastSeenFont.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, self.__cyan)
+        formattedTime = lastSeen[1].split(".")[0]
+
+        cur_dt = datetime.datetime.now()
+        try:
+            lst_dt = datetime.datetime.strptime(lastSeen[0] + " " + lastSeen[1], "%Y/%m/%d %H:%M:%S.%f")
+            delta = abs((cur_dt - lst_dt).seconds)
+        except ValueError:
+            delta = 0
+
+        if (delta > 300):                   # older than 5 minutes
+            lsColor = self.__red
+        elif (delta > 120):                 # older than 2 minutes
+            lsColor = self.__darkOrange
+        else:
+            lsColor = self.__cyan
+    
+        self.clearLastSeen()
+        txt = self.__lastSeenFont.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, lsColor)
         xpos = ((self.__screenWidth/2) - txt.get_width())/2
         self.__lcd.blit(txt, (xpos, 105))
 
@@ -340,6 +360,7 @@ class Display():
             self.__oldBlipAngle = blipAngle
             self.__oldBlipDistance = blipDistance
             if (blipDistance > self.__maxBlipDistance-1):
+                #TODO - store in array, but don't plot (return?)
                 blipDistance = self.__maxBlipDistance-1
 
             #transform blip distance proportionally from mileage to circle radius
