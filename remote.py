@@ -42,42 +42,54 @@ def exitSystem():
 
 
 def holdOn():
-    global curState, adsbObj, lastID, lastCallsign, currentID, currentCallsign
+    global curState
     if (curState == State.CIV_MIL):
+        milBtn.drawButton(Button.State.DISABLED)
         curState = State.CIV_MIL_HOLD
-        adsbObj.clearLastFlightData()
-        dsp.clearLastSeen()
-        dsp.clearRecentsPane()
-        dsp.drawRadar(600,195,165,110)
-        milBtn.disableButton()
 
+    elif (curState == State.MIL_ONLY):
+        curState = State.MIL_ONLY_HOLD
+
+    adsbObj.clearLastFlightData()
+    dsp.clearLastSeen()
+    dsp.clearRecentsPane()
+    dsp.drawRadar(600,195,165,110)
+    
 def holdOff():
     global curState, adsbObj, currentCallsign
     if (curState == State.CIV_MIL_HOLD):
         curState = State.CIV_MIL
-        adsbObj.clearLastCallsignID()
-        adsbObj.clearLastFlightData()
-        dsp.clearDistance()
-        dsp.clearFlightData()
-        dsp.clearRadar()
-        dsp.drawRecentsPane()
-        dsp.displayCivRecents(civRecents, currentCallsign)
-        dsp.displayMilRecents(milRecents, currentCallsign)
-        milBtn.drawButton(False)
+        milBtn.drawButton(Button.State.OFF)
+
+    elif (curState == State.MIL_ONLY_HOLD):
+        curState = State.MIL_ONLY
+
+    adsbObj.clearLastCallsignID()
+    adsbObj.clearLastFlightData()
+    dsp.clearDistance()
+    dsp.clearFlightData()
+    dsp.clearRadar()
+    dsp.drawRecentsPane()
+    dsp.displayCivRecents(civRecents, currentCallsign)
+    dsp.displayMilRecents(milRecents, currentCallsign)
     
+    #TODO - Hold and Mil on, then mil off -> undefined state
 def milOn():
-    global milMode, dsp
-    milMode = True
+    global curState, lastSeen
+    curState = State.MIL_ONLY
     dsp.clearICAOid()
     dsp.clearCallsign()
     dsp.clearFlightData()
     dsp.clearLastSeen()
-    return
+    lastSeen = ()
 
 def milOff():
-    global milMode
-    milMode = False
-    return
+    global curState
+    curState = State.CIV_MIL
+    dsp.clearICAOid()
+    dsp.clearCallsign()
+    dsp.clearFlightData()
+    dsp.clearLastSeen()
 
 def bigOn():
     return
@@ -119,6 +131,7 @@ currentID = ''
 lastID = ''
 currentCallsign = ''
 lastCallsign = ''
+lastSeen = ()
 hasCallsign = False
 isMilCallsign = False
 adsbCount=0
@@ -139,15 +152,15 @@ sck.setblocking(0)
 dsp.drawRecentsPane()
 
 buttonList = []
-holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff)
+holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff, Button.State.OFF)
 buttonList.append(holdBtn)
-milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff)
+milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff, Button.State.OFF)
 buttonList.append(milBtn)
-bigBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff)
+bigBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff, Button.State.OFF)
 buttonList.append(bigBtn)
-dataBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff)
+dataBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff, Button.State.OFF)
 buttonList.append(dataBtn)
-exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem)
+exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem, Button.State.OFF)
 buttonList.append(exitBtn)
 pygame.display.update()
 
@@ -181,11 +194,13 @@ while True:
             dsp.clearCallsign()
             dsp.displayICAOid(currentID)
             dsp.displayCallsign(currentCallsign, isMilCallsign)
-            dsp.displayLastSeen(adsbObj)
             dsp.displayFlightData(adsbObj, False)
             dsp.displayCivRecents(civRecents, currentCallsign)
+            dsp.displayMilRecents(milRecents, currentCallsign)
             lastCallsign = currentCallsign
             lastID = currentID
+            lastSeen = (adsbObj.theDate, adsbObj.theTime)
+            # Here, last seen is the time for any airplace.  might not update quickly late at night.
                 
         if ((curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD) and (currentID == lastID)):
             dsp.clearICAOid()
@@ -193,7 +208,6 @@ while True:
             dsp.clearFlightData()
             dsp.displayICAOid(lastID)
             dsp.displayCallsign(lastCallsign, Util.isMilCallsign(lastCallsign))
-            dsp.displayLastSeen(adsbObj)
             dsp.displayFlightData(adsbObj, True)
             if (adsbObj.lat != "" and adsbObj.lon != ""):
                 dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
@@ -204,11 +218,16 @@ while True:
             elif (not adsbObj.lastDist is None):
                 dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
 
+            lastSeen = (adsbObj.theDate, adsbObj.theTime)
+            # Here, last seen is the time for this held airplane.  Will age as airplane flies out of range.
+
+        dsp.displayLastSeen((lastSeen))
+
 
     for event in pygame.event.get():
         if event.type == pygame.FINGERUP:
             for btn in buttonList:                
-                if (btn.isSelected() and (not btn.disabled)):
+                if (btn.isSelected() and (not btn.isDisabled())):
                     btn.toggleButton()
 
     dsp.refreshDisplay()
