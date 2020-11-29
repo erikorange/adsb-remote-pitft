@@ -54,7 +54,7 @@ def zoomIn():
 
 def zoomOut():
     global posList, radarScale
-    radarScale = radarScale + 10
+    radarScale = radarScale + 5
     if (radarScale > 150):
         radarScale = 150
     
