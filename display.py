@@ -44,6 +44,8 @@ class Display():
         self.__recentHeaderFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
         self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
         self.btnRadarFont = pygame.font.Font(fontDir + "FreeMono.ttf", 50)
+        self.__rangeFont = pygame.font.Font(fontDir + "FreeMono.ttf", 20)
+
 
     def __initColors(self):
         self.__green = (0,255,0)
@@ -298,7 +300,7 @@ class Display():
             self.__concentricRadii.append(int(radarRadius*f))
             f=f+0.25
 
-        radarColor=(0,50,0)
+        radarColor=(0,80,0)
 
         #draw radar circle
         pygame.draw.circle(self.__lcd, radarColor, (radarX,radarY), radarRadius, 1)
@@ -361,8 +363,10 @@ class Display():
             self.__oldBlipAngle = blipAngle
             self.__oldBlipDistance = blipDistance
             if (blipDistance > self.__maxBlipDistance):
+                self.drawOutOfRange(True)
                 return False
 
+            self.drawOutOfRange(False)
             #transform blip distance proportionally from mileage to circle radius
             blipRatio=self.__maxBlipDistance/self.__radarRadius
             blipRadius=int(blipDistance/blipRatio)
@@ -385,3 +389,9 @@ class Display():
 
             return True
 
+    def drawOutOfRange(self, inRange):
+        if (inRange):
+            txt = self.__rangeFont.render("Out of Range", 1, self.__red)
+            self.__lcd.blit(txt, (650, 5))
+        else:
+            pygame.draw.rect(self.__lcd, self.__black, (650,5,150,25))
