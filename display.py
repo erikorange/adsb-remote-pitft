@@ -5,6 +5,7 @@ import math
 import datetime
 from util import Util
 
+
 class Display():
         
     def __init__(self):
@@ -49,8 +50,10 @@ class Display():
 
     def __initColors(self):
         self.__green = (0,255,0)
+        self.__medGreen = (0,128,0)
         self.__black = (0,0,0)
         self.__yellow = (255,255,0)
+        self.__medYellow = (128,128,0)
         self.__mediumBlue = (100,149,237)
         self.__cyan = (0,128,128)
         self.__darkRed = (64,0,0)
@@ -168,16 +171,16 @@ class Display():
         cur_dt = datetime.datetime.now()
         try:
             lst_dt = datetime.datetime.strptime(lastSeen[0] + " " + lastSeen[1], "%Y/%m/%d %H:%M:%S.%f")
-            delta = abs((cur_dt - lst_dt).seconds)
+            delta = abs((cur_dt - lst_dt).total_seconds())
         except ValueError:
             delta = 0
 
         if (delta > 300):                   # older than 5 minutes
             lsColor = self.__red
         elif (delta > 120):                 # older than 2 minutes
-            lsColor = self.__darkOrange
+            lsColor = self.__medYellow
         else:
-            lsColor = self.__cyan
+            lsColor = self.__medGreen
     
         self.clearLastSeen()
         txt = self.__lastSeenFont.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, lsColor)
