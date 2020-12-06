@@ -180,7 +180,7 @@ medPurple = (80,0,80)
 medBlue = (0,0,80)
 gray = (128,128,128)
 darkGreen=(0,32,0)
-dataColor=(0,32,32)
+dataColor=(40,40,0)
 white=(255,255,255)
 
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -218,6 +218,7 @@ while True:
         currentID = adsbObj.ICAOid
         currentCallsign = adsbObj.callsign.strip()
     
+        # Determine if we have a callsign, and if so, what type.  Then add to the corresponding lists.
         if (currentCallsign != ""):
             hasCallsign = True
             if (Util.isMilCallsign(currentCallsign)):
@@ -232,6 +233,16 @@ while True:
             hasCallsign = False
             isMilCallsign = False
 
+
+        # Refresh the recents display if we have a callsign and if we're in a mode that displays them
+        if (hasCallsign and (curState == State.CIV_MIL or curState == State.MIL_ONLY)):
+            if (isMilCallsign):
+                dsp.displayMilRecents(milRecents, currentCallsign)
+            else:
+                dsp.displayCivRecents(civRecents, currentCallsign)
+
+
+
 #TODO - clear lastSeenDateTime() approproately in all state changes
 
         if ((curState == State.CIV_MIL and hasCallsign) or (curState == State.MIL_ONLY and isMilCallsign)):
@@ -240,8 +251,6 @@ while True:
             dsp.displayICAOid(currentID)
             dsp.displayCallsign(currentCallsign, isMilCallsign)
             dsp.displayFlightData(adsbObj, False)
-            dsp.displayCivRecents(civRecents, currentCallsign)
-            dsp.displayMilRecents(milRecents, currentCallsign)
             adsbObj.setLastCallsignAndID(currentCallsign, currentID)
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
             # Here, last seen is the time for any airplace.  might not update quickly late at night.
