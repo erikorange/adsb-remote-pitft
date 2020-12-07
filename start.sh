@@ -1,1 +1,1 @@
-nc 127.0.0.1 30003 | python3 remote.py > pylog.log
+python3 -B remote.py > pylog.log
