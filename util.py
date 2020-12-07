@@ -6,6 +6,10 @@ from datetime import datetime
 class Util:
 
     @staticmethod
+    def setCurrentDir(dirpath):
+        os.chdir(dirpath)
+        
+    @staticmethod
     def timestamp(txt):
         print(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' ' + txt)
 

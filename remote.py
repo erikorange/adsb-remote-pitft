@@ -152,6 +152,8 @@ signal.signal(signal.SIGTERM, shutdownEvent)
 signal.signal(signal.SIGINT, shutdownEvent)
 signal.signal(signal.SIGTSTP, shutdownEvent)
 
+Util.setCurrentDir('/home/pi/adsb-remote')
+
 HOME_LAT, HOME_LON = getHomeLatLon("home-lat-lon.txt")
 
 dsp = Display()
