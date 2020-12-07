@@ -6,6 +6,11 @@ from datetime import datetime
 class Util:
 
     @staticmethod
+    def shutdownSystem():
+        sd = os.popen('sudo shutdown -h now').readline()
+        return
+        
+    @staticmethod
     def setCurrentDir(dirpath):
         os.chdir(dirpath)
         
