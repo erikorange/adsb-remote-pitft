@@ -40,6 +40,8 @@ def getHomeLatLon(filename):
 def exitSystem():
     sys.exit(0)
 
+def powerOff():
+    Util.shutdownSystem()
 
 def zoomIn():
     global posList, radarScale
@@ -106,10 +108,11 @@ def holdOff():
     
     #TODO - Hold and Mil on, then mil off -> undefined state
 def milOn():
-    global curState, lastSeenDateTime
+    global curState, lastSeenDateTime, adsbObj
     curState = State.MIL_ONLY
     dsp.clearICAOid()
     dsp.clearCallsign()
+    adsbObj.clearLastCallsignAndID()
     dsp.clearFlightData()
     dsp.clearLastSeen()
     lastSeenDateTime = ()
@@ -134,10 +137,10 @@ def bigOn():
 def bigOff():
     return
 
-def dataOn():
+def infoOn():
     return
 
-def dataOff():
+def infoOff():
     return
 
 def addToRecents(callsign, que):
@@ -196,12 +199,15 @@ holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD",
 buttonList.append(holdBtn)
 milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(milBtn)
-bigBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
-buttonList.append(bigBtn)
-dataBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "DATA", dataOn, dataOff, Button.State.OFF, Button.Type.STICKY)
-buttonList.append(dataBtn)
-exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, exitSystem, Button.State.OFF, Button.Type.STICKY)
+infoBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "INFO", infoOn, infoOff, Button.State.OFF, Button.Type.STICKY)
+buttonList.append(infoBtn)
+#bigBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
+#buttonList.append(bigBtn)
+exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, None, Button.State.OFF, Button.Type.MOMENTARY)
 buttonList.append(exitBtn)
+#offBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "OFF", powerOff, None, Button.State.OFF, Button.Type.MOMENTARY)
+#buttonList.append(offBtn)
+
 plusBtn = Button(dsp.lcd, 545, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "+", zoomOut, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 buttonList.append(plusBtn)
 minusBtn = Button(dsp.lcd, 605, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "-", zoomIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
@@ -244,9 +250,6 @@ while True:
                 dsp.displayCivRecents(civRecents, currentCallsign)
 
 
-
-#TODO - clear lastSeenDateTime() approproately in all state changes
-
         if ((curState == State.CIV_MIL and hasCallsign) or (curState == State.MIL_ONLY and isMilCallsign)):
             dsp.clearICAOid()
             dsp.clearCallsign()
@@ -256,8 +259,13 @@ while True:
             adsbObj.setLastCallsignAndID(currentCallsign, currentID)
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
             # Here, last seen is the time for any airplace.  might not update quickly late at night.
-                
-        if ((curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD) and (currentID == adsbObj.lastID)):
+        
+        # HOLD + MIL: we might not have any mil callsign yet.  So set the lastID to the first mil callsign that's detected:
+        if (curState == State.MIL_ONLY_HOLD and isMilCallsign and adsbObj.lastID == None):
+            adsbObj.setLastCallsignAndID(currentCallsign, currentID)
+
+
+        if ((curState == State.CIV_MIL_HOLD or (curState == State.MIL_ONLY_HOLD and isMilCallsign)) and (currentID == adsbObj.lastID)):
             dsp.clearICAOid()
             dsp.clearCallsign()
             dsp.clearFlightData()
