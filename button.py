@@ -92,3 +92,6 @@ class Button():
 
     def getType(self):
         return self.__type
+
+    def getState(self):
+        return self.__state
