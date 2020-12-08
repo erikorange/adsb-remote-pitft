@@ -138,18 +138,39 @@ def bigOff():
     return
 
 def infoOn():
-    global curState, lastState
+    # save current state and button states
+    global curState, lastState, holdBtnState, milBtnState
     dsp.clearDisplayArea()
     lastState = curState
     curState = State.INFO
     # save button states
+    holdBtnState = holdBtn.getState()
+    milBtnState = milBtn.getState()
     holdBtn.drawButton(Button.State.HIDDEN)
     milBtn.drawButton(Button.State.HIDDEN)
+
+    if (lastState == State.MIL_ONLY_HOLD or lastState == State.CIV_MIL_HOLD):
+        plusBtn.drawButton(Button.State.HIDDEN)
+        minusBtn.drawButton(Button.State.HIDDEN)
+        
     dsp.drawInfoPane()
     return
 
 def infoOff():
-    return
+    global curState, lastState, holdBtnState, milBtnState, radarScale, civRecents, milRecents, currentCallsign
+    dsp.clearDisplayArea()
+    curState = lastState
+    holdBtn.drawButton(holdBtnState)
+    milBtn.drawButton(milBtnState)
+    if (curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD):
+        dsp.drawRadar(600,195,165,radarScale)
+        plusBtn.drawButton(Button.State.ON)
+        minusBtn.drawButton(Button.State.ON)
+
+    elif (curState == State.CIV_MIL or curState == State.MIL_ONLY):
+        dsp.drawRecentsPane()
+        dsp.displayCivRecents(civRecents, currentCallsign)
+        dsp.displayMilRecents(milRecents, currentCallsign)
 
 def addToRecents(callsign, que):
     try:
@@ -187,6 +208,8 @@ isMilCallsign = False
 adsbCount=0
 curState = State.CIV_MIL
 lastState = None
+holdBtnState = None
+milBtnState = None
 startAgain = True
 squitterRate = 0
 
