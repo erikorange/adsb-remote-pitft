@@ -6,6 +6,7 @@ import socket
 import enum
 import pygame
 import collections
+import datetime
 
 from display import Display
 from button import Button
@@ -186,6 +187,8 @@ isMilCallsign = False
 adsbCount=0
 curState = State.CIV_MIL
 lastState = None
+startAgain = True
+squitterRate = 0
 
 
 medRed = (80,0,0)
@@ -298,7 +301,18 @@ while True:
             dsp.displayLastSeen((lastSeenDateTime))
         
         if (curState == State.INFO):
-            dsp.updateInfoPane(len(civList), len(milList), adsbCount)
+            if (startAgain):
+                startTime = datetime.datetime.now()
+                startCount = adsbCount
+                startAgain = False
+            
+            endTime = datetime.datetime.now()
+            delta = (endTime - startTime).total_seconds()
+            if (delta >= 1.0):
+                squitterRate = adsbCount - startCount
+                startAgain = True
+
+            dsp.updateInfoPane(len(civList), len(milList), adsbCount, squitterRate)
 
 
     for event in pygame.event.get():

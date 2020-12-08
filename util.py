@@ -23,12 +23,12 @@ class Util:
         res = os.popen('vcgencmd measure_temp').readline()
         tempC = float(res.replace("temp=","").replace("'C\n",""))
         tempF = (tempC * (9/5)) + 32
-        return str(tempF)
+        return "{0:0.1f}".format(tempF)
     
     @staticmethod
     def getUptime():
         ut = os.popen('uptime -p').readline()
-        return ut.replace("\n","")
+        return ut.replace("\n","").replace("hours", "hr").replace("minutes", "min").replace("up ", "")
 
     @staticmethod
     def isMilCallsign(cs):
