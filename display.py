@@ -73,10 +73,10 @@ class Display():
         pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
 
     def drawInfoPane(self):
-        labels = [("civilian:", 10), ("military:", 70), ("squitters:", 130), ("squitters/sec:", 190), ("cpu temp:", 250), ("uptime:", 310)]
+        labels = [("civilian:", 10), ("military:", 70), ("squitters:", 130), ("squitters/sec:", 190)]
 
         for l in labels:
-            txt = self.__infoFont.render(l[0], 1, self.__blue)
+            txt = self.__infoFont.render(l[0], 1, self.__mediumBlue)
             txtRect = txt.get_rect()
             txtRect.right = 270
             txtRect.y = l[1]
@@ -90,8 +90,8 @@ class Display():
         civCnt = "{:,}".format(civCount)
         milCnt = "{:,}".format(milCount)
         sqCnt = "{:,}".format(squitterCount)
-        cpuTemp = Util.getCPUTemp() + u'\N{DEGREE SIGN}'
-        uptime = Util.getUptime()
+        #cpuTemp = Util.getCPUTemp() + u'\N{DEGREE SIGN}'
+        #uptime = Util.getUptime()
 
         txt = self.__infoFont.render(civCnt, 1, self.__easyWhite)
         self.__lcd.blit(txt, (x, 10))
@@ -101,10 +101,10 @@ class Display():
         self.__lcd.blit(txt, (x, 130))
         txt = self.__infoFont.render(str(squitterRate), 1, self.__easyWhite)
         self.__lcd.blit(txt, (x, 190))
-        txt = self.__infoFont.render(cpuTemp, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 250))
-        txt = self.__infoFont.render(uptime, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 310))
+        #txt = self.__infoFont.render(cpuTemp, 1, self.__easyWhite)
+        #self.__lcd.blit(txt, (x, 250))
+        #txt = self.__infoFont.render(uptime, 1, self.__easyWhite)
+        #self.__lcd.blit(txt, (x, 310))
 
 
 
@@ -216,9 +216,9 @@ class Display():
         except ValueError:
             delta = 0
 
-        if (delta > 300):                   # older than 5 minutes
+        if (delta > 180.0):                   # older than 3 minutes
             lsColor = self.__red
-        elif (delta > 120):                 # older than 2 minutes
+        elif (delta > 60.0):                   # older than 1 minute
             lsColor = self.__medYellow
         else:
             lsColor = self.__medGreen
