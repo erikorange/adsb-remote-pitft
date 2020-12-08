@@ -46,6 +46,7 @@ class Display():
         self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
         self.btnRadarFont = pygame.font.Font(fontDir + "FreeMono.ttf", 50)
         self.__rangeFont = pygame.font.Font(fontDir + "FreeMono.ttf", 20)
+        self.__infoFont = pygame.font.Font(fontDir + "FreeSans.ttf", 45)
 
 
     def __initColors(self):
@@ -63,9 +64,37 @@ class Display():
         self.__medOrange=(255,120,0)
         self.__darkOrange=(128,60,0)
         self.__white = (255,255,255)
+        self.__easyWhite = (200,200,200)
         self.__gray = (128,128,128)
         self.__red = (255,0,0)
         self.__blue = (0,0,255)
+
+    def clearDisplayArea(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
+
+    def drawInfoPane(self):
+        labels = [("civilian:", 10), ("military:", 70), ("squitters:", 130), ("squitters/sec:", 190), ("cpu temp:", 250), ("uptime:", 310)]
+
+        for l in labels:
+            txt = self.__infoFont.render(l[0], 1, self.__blue)
+            txtRect = txt.get_rect()
+            txtRect.right = 300
+            txtRect.y = l[1]
+            self.__lcd.blit(txt, txtRect)
+
+        self.refreshDisplay()
+
+    def updateInfoPane(self, civCount, milCount, adsbCount):
+        pygame.draw.rect(self.__lcd, self.__black, (300,0,self.__screenWidth-300,427))
+        x = 320
+        txt = self.__infoFont.render(str(civCount), 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 10))
+        txt = self.__infoFont.render(str(milCount), 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 70))
+        txt = self.__infoFont.render(str(adsbCount), 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 130))
+
+
 
     def drawRecentsPane(self):
         ctrX = self.__screenWidth/2 + self.__screenWidth/4

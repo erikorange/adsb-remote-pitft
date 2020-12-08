@@ -19,7 +19,7 @@ class State(enum.Enum):
     MIL_ONLY = 4
     MIL_ONLY_HOLD = 5
     MIL_ONLY_BIG = 6
-    STATS = 7
+    INFO = 7
 
 
 def shutdownEvent(signal, frame):
@@ -106,7 +106,6 @@ def holdOff():
     dsp.displayMilRecents(milRecents, currentCallsign)
     lastSeenDateTime = ()
     
-    #TODO - Hold and Mil on, then mil off -> undefined state
 def milOn():
     global curState, lastSeenDateTime, adsbObj
     curState = State.MIL_ONLY
@@ -138,6 +137,14 @@ def bigOff():
     return
 
 def infoOn():
+    global curState, lastState
+    dsp.clearDisplayArea()
+    lastState = curState
+    curState = State.INFO
+    # save button states
+    holdBtn.drawButton(Button.State.HIDDEN)
+    milBtn.drawButton(Button.State.HIDDEN)
+    dsp.drawInfoPane()
     return
 
 def infoOff():
@@ -178,6 +185,7 @@ hasCallsign = False
 isMilCallsign = False
 adsbCount=0
 curState = State.CIV_MIL
+lastState = None
 
 
 medRed = (80,0,0)
@@ -286,7 +294,11 @@ while True:
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
             # Here, last seen is the time for this held airplane.  Will age as airplane flies out of range.
 
-        dsp.displayLastSeen((lastSeenDateTime))
+        if (curState != State.INFO):
+            dsp.displayLastSeen((lastSeenDateTime))
+        
+        if (curState == State.INFO):
+            dsp.updateInfoPane(len(civList), len(milList), adsbCount)
 
 
     for event in pygame.event.get():
