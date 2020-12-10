@@ -109,6 +109,7 @@ def holdOff():
     
 def milOn():
     global curState, lastSeenDateTime, adsbObj
+
     curState = State.MIL_ONLY
     dsp.clearICAOid()
     dsp.clearCallsign()
@@ -116,6 +117,8 @@ def milOn():
     dsp.clearFlightData()
     dsp.clearLastSeen()
     lastSeenDateTime = ()
+    # Entering Mil Mode clears the ID and callsign.  Disable the Hold button until we get a mil ID and callsign (otherwise there's nothing to hold on)
+    holdBtn.drawButton(Button.State.DISABLED)
 
 def milOff():
     global curState, lastSeenDateTime
@@ -131,6 +134,9 @@ def milOff():
         dsp.clearLastSeen()
         lastSeenDateTime = ()
 
+    if (holdBtn.getState() == Button.State.DISABLED):
+        holdBtn.drawButton(Button.State.OFF)
+
 def bigOn():
     return
 
@@ -138,8 +144,14 @@ def bigOff():
     return
 
 def infoOn():
-    # save current state and button states
-    global curState, lastState, holdBtnState, milBtnState
+    global curState, lastState, holdBtnState, milBtnState, startAgain, startTime, startCount, endTime, squitterRate, delta
+    startAgain = True
+    startTime = None
+    endTime = None
+    startCount = 0
+    squitterRate = 0
+    delta = 0
+
     dsp.clearDisplayArea()
     lastState = curState
     curState = State.INFO
@@ -166,6 +178,9 @@ def infoOff():
         dsp.drawRadar(600,195,165,radarScale)
         plusBtn.drawButton(Button.State.ON)
         minusBtn.drawButton(Button.State.ON)
+        dsp.displayICAOid(adsbObj.lastID)
+        dsp.displayCallsign(adsbObj.lastCallsign, Util.isMilCallsign(adsbObj.lastCallsign))
+        dsp.displayFlightData(adsbObj, True)
 
     elif (curState == State.CIV_MIL or curState == State.MIL_ONLY):
         dsp.drawRecentsPane()
@@ -179,12 +194,13 @@ def addToRecents(callsign, que):
         que.appendleft(callsign)
     return que
 
+#DEBUG
+#signal.signal(signal.SIGTERM, shutdownEvent)
+#signal.signal(signal.SIGINT, shutdownEvent)
+#signal.signal(signal.SIGTSTP, shutdownEvent)
 
-signal.signal(signal.SIGTERM, shutdownEvent)
-signal.signal(signal.SIGINT, shutdownEvent)
-signal.signal(signal.SIGTSTP, shutdownEvent)
-
-Util.setCurrentDir('/home/pi/adsb-remote')
+#DEBUG
+#Util.setCurrentDir('/home/pi/adsb-remote')
 
 HOME_LAT, HOME_LON = getHomeLatLon("home-lat-lon.txt")
 
@@ -211,7 +227,12 @@ lastState = None
 holdBtnState = None
 milBtnState = None
 startAgain = True
+startTime = None
+endTime = None
+startCount = 0
 squitterRate = 0
+delta = 0
+
 
 
 medRed = (80,0,0)
@@ -223,6 +244,7 @@ dataColor=(40,40,0)
 white=(255,255,255)
 
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sck.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   # added for simulator
 sck.bind(('', 49001))
 sck.setblocking(0)
 
@@ -284,6 +306,10 @@ while True:
                 dsp.displayCivRecents(civRecents, currentCallsign)
 
 
+     #TODO Mil Hold Mil Mil = messed up display
+     # Should Be: Mil Hold Mil -> this disables Mil mode, which when Hold is on (it is), Mil should be disabled.   
+
+
         if ((curState == State.CIV_MIL and hasCallsign) or (curState == State.MIL_ONLY and isMilCallsign)):
             dsp.clearICAOid()
             dsp.clearCallsign()
@@ -292,12 +318,27 @@ while True:
             dsp.displayFlightData(adsbObj, False)
             adsbObj.setLastCallsignAndID(currentCallsign, currentID)
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
+
+            #enable hold button if we found our first mil callsign
+            if (curState == State.MIL_ONLY and isMilCallsign and holdBtn.getState() == Button.State.DISABLED):
+                holdBtn.drawButton(Button.State.OFF)
+
             # Here, last seen is the time for any airplace.  might not update quickly late at night.
         
         # HOLD + MIL: we might not have any mil callsign yet.  So set the lastID to the first mil callsign that's detected:
-        if (curState == State.MIL_ONLY_HOLD and isMilCallsign and adsbObj.lastID == None):
-            adsbObj.setLastCallsignAndID(currentCallsign, currentID)
+        #if (curState == State.MIL_ONLY_HOLD and isMilCallsign and adsbObj.lastID == None):
+            #adsbObj.setLastCallsignAndID(currentCallsign, currentID)
 
+        #TODO - keep gathering positions if we were in hold mode but now we're in info mode
+        #if curstate=info and laststate was -> the entire condition below)
+        #  if (adsbObj.lat != "" and adsbObj.lon != ""):
+                #dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                #bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                #dsp.displayDistance(dist, bearing)
+                #dsp.drawRadarBlip(dist, bearing)
+                #posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
+                #
+                # then in info off...if was hold modes then redraw position list, like in +/- buttons
 
         if ((curState == State.CIV_MIL_HOLD or (curState == State.MIL_ONLY_HOLD and isMilCallsign)) and (currentID == adsbObj.lastID)):
             dsp.clearICAOid()
@@ -339,7 +380,7 @@ while True:
 
 
     for event in pygame.event.get():
-        if event.type == pygame.FINGERUP:
+        if (event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP):
             for btn in buttonList:                
                 if (btn.isSelected() and (not (btn.isDisabled() or btn.isHidden()))):
                     if (btn.getType() == Button.Type.STICKY):
