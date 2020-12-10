@@ -24,29 +24,49 @@ class Display():
     
     def __initDisplay(self):
         pygame.init()
-        pygame.mouse.set_visible(False)
-        flags = FULLSCREEN | DOUBLEBUF | HWSURFACE
-        self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
+        #DEBUG
+        #pygame.mouse.set_visible(False)
+        #flags = FULLSCREEN | DOUBLEBUF | HWSURFACE
+        #self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
+        self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight))
         self.lcd = self.__lcd
 
     def __initFonts(self):
-        fontDir="/usr/share/fonts/truetype/freefont/"
-        self.__idFont = pygame.font.Font(fontDir + "FreeMono.ttf", 40) # ICAO ID
-        self.__csFont = pygame.font.Font(fontDir + "FreeSans.ttf", 52) # callsign
-        self.__fltFont = pygame.font.Font(fontDir + "FreeMono.ttf", 35) # flight data
-        self.__lastSeenFont = pygame.font.Font(fontDir + "FreeSans.ttf", 25) # time last seen
-        self.__distFont = pygame.font.Font(fontDir + "FreeSans.ttf", 40) # distance and bearing
-        self.__btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 13)
-        self.__recentFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
-        self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
-        self.__optsFont = pygame.font.Font(fontDir + "FreeSans.ttf", 17)
-        self.__titleFont= pygame.font.Font(fontDir + "FreeSans.ttf", 18)
-        self.__radarFont = pygame.font.Font(fontDir + "FreeSans.ttf", 20)
-        self.__recentHeaderFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
-        self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
-        self.btnRadarFont = pygame.font.Font(fontDir + "FreeMono.ttf", 50)
-        self.__rangeFont = pygame.font.Font(fontDir + "FreeMono.ttf", 20)
-        self.__infoFont = pygame.font.Font(fontDir + "FreeSans.ttf", 45)
+        #DEBUG
+        #fontDir="/usr/share/fonts/truetype/freefont/"
+        #self.__idFont = pygame.font.Font(fontDir + "FreeMono.ttf", 40) # ICAO ID
+        #self.__csFont = pygame.font.Font(fontDir + "FreeSans.ttf", 52) # callsign
+        #self.__fltFont = pygame.font.Font(fontDir + "FreeMono.ttf", 35) # flight data
+        #self.__lastSeenFont = pygame.font.Font(fontDir + "FreeSans.ttf", 25) # time last seen
+        #self.__distFont = pygame.font.Font(fontDir + "FreeSans.ttf", 40) # distance and bearing
+        #self.__btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 13)
+        #self.__recentFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
+        #self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
+        #self.__optsFont = pygame.font.Font(fontDir + "FreeSans.ttf", 17)
+        #self.__titleFont= pygame.font.Font(fontDir + "FreeSans.ttf", 18)
+        #self.__radarFont = pygame.font.Font(fontDir + "FreeSans.ttf", 20)
+        #self.__recentHeaderFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
+        #self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
+        #self.btnRadarFont = pygame.font.Font(fontDir + "FreeMono.ttf", 50)
+        #self.__rangeFont = pygame.font.Font(fontDir + "FreeMono.ttf", 20)
+        #self.__infoFont = pygame.font.Font(fontDir + "FreeSans.ttf", 45)
+
+        self.__idFont = pygame.font.SysFont("couriernew", 40) # ICAO ID
+        self.__csFont = pygame.font.SysFont("microsoftsansserif", 52) # callsign
+        self.__fltFont = pygame.font.SysFont("couriernew", 35) # flight data
+        self.__lastSeenFont = pygame.font.SysFont("microsoftsansserif", 25) # time last seen
+        self.__distFont = pygame.font.SysFont("microsoftsansserif", 40) # distance and bearing
+        self.__btnFont = pygame.font.SysFont("microsoftsansserif", 13)
+        self.__recentFont= pygame.font.SysFont("microsoftsansserif", 25)
+        self.__statsFont= pygame.font.SysFont("microsoftsansserif", 25)
+        self.__optsFont = pygame.font.SysFont("microsoftsansserif", 17)
+        self.__titleFont= pygame.font.SysFont("microsoftsansserif", 18)
+        self.__radarFont = pygame.font.SysFont("microsoftsansserif", 20)
+        self.__recentHeaderFont = pygame.font.SysFont("microsoftsansserif", 30)
+        self.btnFont = pygame.font.SysFont("microsoftsansserif", 30)
+        self.btnRadarFont = pygame.font.SysFont("couriernew", 50)
+        self.__rangeFont = pygame.font.SysFont("couriernew", 20)
+        self.__infoFont = pygame.font.SysFont("microsoftsansserif", 45)
 
 
     def __initColors(self):
