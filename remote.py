@@ -194,17 +194,18 @@ def addToRecents(callsign, que):
         que.appendleft(callsign)
     return que
 
-#DEBUG
-#signal.signal(signal.SIGTERM, shutdownEvent)
-#signal.signal(signal.SIGINT, shutdownEvent)
-#signal.signal(signal.SIGTSTP, shutdownEvent)
 
-#DEBUG
-#Util.setCurrentDir('/home/pi/adsb-remote')
+winFlag = Util.isWindows()
+if (not winFlag):
+    signal.signal(signal.SIGTERM, shutdownEvent)
+    signal.signal(signal.SIGINT, shutdownEvent)
+    signal.signal(signal.SIGTSTP, shutdownEvent)
+    Util.setCurrentDir('/home/pi/adsb-remote')
+
 
 HOME_LAT, HOME_LON = getHomeLatLon("home-lat-lon.txt")
 
-dsp = Display()
+dsp = Display(winFlag)
 dsp.setupAdsbDisplay()
 adsbObj = Adsb()
 

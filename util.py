@@ -2,8 +2,16 @@ import re
 import os
 from math import degrees, radians, cos, sin, asin, sqrt, atan2
 from datetime import datetime
+import platform
 
 class Util:
+
+    @staticmethod
+    def isWindows():
+        if (platform.system() == 'Windows'):
+            return True
+        else:
+            return False
 
     @staticmethod
     def shutdownSystem():
