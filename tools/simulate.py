@@ -1,89 +1,9 @@
-# --file <filename> required
-# --feed | --summary
-
 import sys
 import socket
 import time
 import argparse
-import re
 
-
-def isMilCallsign(cs):
-    # starts with at least 4 letters, then at least 2 numbers; or starts with RCH or TOPCAT; or is GOTOFMS.  Remove spaces for VADER xx
-        match = re.search(r'(^(?!TEST)[A-Z]{4,}[0-9]{2,}$)|(^RCH)|(^TOPCAT)|(GOTOFMS)', cs.replace(' ',''))
-        if match:
-            return 1
-        else:
-            return 0
-
-def summary(filename):
-    civList = set()
-    milList = set()
-    civCnt = 0
-    milCnt = 0
-    idx = 0
-    total = sum(1 for line in open(filename))
-
-    for line in open(filename):
-        l = line.strip()
-        vals = l.split(",")
-        cs = vals[10].strip()
-        if (cs != ""):
-            id = vals[4]
-            if (isMilCallsign(cs)):
-                milList.add((id,cs))
-                milCnt += 1
-            else:
-                civList.add((id,cs))
-                civCnt += 1
-
-        idx += 1
-        pct = idx/total*100
-        print("{0:0.1f}% complete\r".format(pct), end="")
-
-    print("Civilian: {:,}".format(civCnt))
-    print("Military: {:,}".format(milCnt))
-    
-
-    return
-
-
-
-
-
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("file", type=str, help="squitter file")
-group = parser.add_mutually_exclusive_group()
-group.add_argument("--feeder", action="store_true", help="feed squitter file to remote head")
-group.add_argument("--summary", action="store_true", help="display a summary of squitter file callsigns")
-args = parser.parse_args()
-
-if (args.feeder):
-    print("feeder")
-elif (args.summary):
-    summary(args.file)
-
-print("done.")
-sys.exit(0)
-
-
-
-
-filename = "C:\\Users\\Erik\\Documents\\adsb-scanner\\squittersss.txt"
-print(filename)
-f = open(filename, 'r')
-sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sck.connect(('127.0.0.1', 49001))
-count=0
-
-while True: 
-    line = f.readline() 
-    if not line: 
-        break
-    
-    msg = bytes(line.strip(), 'utf-8')
+def sendToSocket(sck, msg):
     retry = True
     while (retry):
         try:
@@ -94,9 +14,55 @@ while True:
             time.sleep(1)
         else:
             retry = False
-    count +=1
-    time.sleep(0.01)
-    print(str(count))
 
-f.close()
-print("done.")
+def getICAOid(squitter):
+    dataVals = squitter.split(",")
+    return(dataVals[4])
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--filter', action='store', type=str, nargs="*", help="only use these ICAO IDs")
+parser.add_argument("--replace", nargs=2, action="store", help="substitute one callsign with another callsign")
+parser.add_argument("--loop", action="store_true", help="keep replaying squitter file")
+parser.add_argument("file", type=str, help="squitter filename")
+args = parser.parse_args()
+
+if (args.loop):
+    print("looping")
+
+if (args.replace):
+    print(args.replace[0])
+    print(args.replace[1])
+
+
+total = sum(1 for line in open(args.file))
+print("{:,} simulated squitters".format(total))
+
+sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sck.connect(('127.0.0.1', 49001))
+
+squitterFile = open(args.file, 'r')
+while True:
+    idx = 0
+    for line in squitterFile:
+        if (args.filter == None):               # no filtering, process everything
+            process = True
+        elif (getICAOid(line) in args.filter):  # some filter was specified, check if a match and process is found
+            process = True
+        else:
+            process = False                     # skip this record
+
+        if (process):
+            if (args.replace):
+                if args.replace[0] in line:
+                    line = line.replace(args.replace[0], args.replace[1])
+            msg = bytes(line.strip(), 'utf-8')
+            sendToSocket(sck, msg)
+            time.sleep(0.01)
+            
+        idx +=1
+        print("{:,}\r".format(idx), end="")
+
+    if (not args.loop):
+        break
+
+squitterFile.close()
