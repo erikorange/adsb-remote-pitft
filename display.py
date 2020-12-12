@@ -19,6 +19,10 @@ class Display():
         self.__compassPoints=[]
         self.__crosshatchLines=[]
         self.__concentricRadii=[]
+        self.__dataFlipLEDs = False
+        self.__dataLED1x = 10
+        self.__dataLED2x = 23
+        self.__dataLEDy = 10
 
         self.__initDisplay()
         self.__initFonts()
@@ -82,6 +86,25 @@ class Display():
         self.__red = (255,0,0)
         self.__blue = (0,0,255)
 
+    def drawDataLEDs(self):
+        pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED1x,self.__dataLEDy), 5, 0)
+        pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED2x,self.__dataLEDy), 5, 0)
+
+    def flipDataLEDs(self):
+        if (self.__dataFlipLEDs):
+            LED1 = self.__medGreen
+            LED2 = self.__medRed
+        else:
+            LED1 = self.__medRed
+            LED2 = self.__medGreen
+
+        pygame.draw.circle(self.__lcd, LED1, (self.__dataLED1x,self.__dataLEDy), 5, 0)
+        pygame.draw.circle(self.__lcd, LED2, (self.__dataLED2x,self.__dataLEDy), 5, 0)
+        
+        self.__dataFlipLEDs = not self.__dataFlipLEDs
+        return
+
+
     def clearDisplayArea(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
 
@@ -118,8 +141,6 @@ class Display():
         #self.__lcd.blit(txt, (x, 250))
         #txt = self.__infoFont.render(uptime, 1, self.__easyWhite)
         #self.__lcd.blit(txt, (x, 310))
-
-
 
     def drawRecentsPane(self):
         ctrX = self.__screenWidth/2 + self.__screenWidth/4
@@ -200,7 +221,7 @@ class Display():
         self.__lcd.blit(txt, (xpos, 0))
 
     def clearICAOid(self):
-        pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth/2,39))
+        pygame.draw.rect(self.__lcd, self.__black, (40,0,self.__screenWidth/2-40,39))
 
     def displayCallsign(self, cs, isMil):
         txt = self.__csFont.render(cs, 1, self.__yellow)

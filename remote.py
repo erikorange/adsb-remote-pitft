@@ -250,6 +250,7 @@ sck.bind(('', 49001))
 sck.setblocking(0)
 
 dsp.drawRecentsPane()
+dsp.drawDataLEDs()
 
 buttonList = []
 holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff, Button.State.OFF, Button.Type.STICKY)
@@ -280,6 +281,10 @@ while True:
     else:
         adsbObj.loadData(data.decode('utf-8'))
         adsbCount += 1
+
+        if (adsbCount % 10 == 0):
+            dsp.flipDataLEDs()
+
         currentID = adsbObj.ICAOid
         currentCallsign = adsbObj.callsign.strip()
     
