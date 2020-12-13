@@ -19,6 +19,10 @@ def getICAOid(squitter):
     dataVals = squitter.split(",")
     return(dataVals[4])
 
+def convertToUpper(list):
+    if (list != None):
+        return [x.upper() for x in list]
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--filter', action='store', type=str, nargs="*", help="only use these ICAO IDs")
 parser.add_argument("--replace", nargs=2, action="store", help="substitute one callsign with another callsign")
@@ -26,19 +30,15 @@ parser.add_argument("--loop", action="store_true", help="keep replaying squitter
 parser.add_argument("file", type=str, help="squitter filename")
 args = parser.parse_args()
 
-if (args.loop):
-    print("looping")
-
-if (args.replace):
-    print(args.replace[0])
-    print(args.replace[1])
-
+args.filter = convertToUpper(args.filter)
+args.replace = convertToUpper(args.replace)
 
 total = sum(1 for line in open(args.file))
 print("{:,} simulated squitters".format(total))
 
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sck.connect(('127.0.0.1', 49001))
+
 
 squitterFile = open(args.file, 'r')
 while True:
