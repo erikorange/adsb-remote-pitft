@@ -22,17 +22,17 @@ def writeListToFile(list, filename):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("sqFile", type=str, help="squitter filename")
+parser.add_argument("file", type=str, help="squitter filename")
 args = parser.parse_args()
 
 civList = set()
 milList = set()
 
 idx = 0
-total = sum(1 for line in open(args.sqFile))
+total = sum(1 for line in open(args.file))
 print("Analyzing {:,} rows".format(total))
 
-for l in open(args.sqFile):
+for l in open(args.file):
     line = l.strip()
     vals = line.split(",")
     callsign = vals[10].strip()
