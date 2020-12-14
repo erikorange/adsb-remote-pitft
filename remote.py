@@ -331,10 +331,6 @@ while True:
 
             # Here, last seen is the time for any airplace.  might not update quickly late at night.
         
-        # HOLD + MIL: we might not have any mil callsign yet.  So set the lastID to the first mil callsign that's detected:
-        #if (curState == State.MIL_ONLY_HOLD and isMilCallsign and adsbObj.lastID == None):
-            #adsbObj.setLastCallsignAndID(currentCallsign, currentID)
-
         #TODO - keep gathering positions if we were in hold mode but now we're in info mode
         #if curstate=info and laststate was -> the entire condition below)
         #  if (adsbObj.lat != "" and adsbObj.lon != ""):
@@ -346,7 +342,7 @@ while True:
                 #
                 # then in info off...if was hold modes then redraw position list, like in +/- buttons
 
-        if ((curState == State.CIV_MIL_HOLD or (curState == State.MIL_ONLY_HOLD and isMilCallsign)) and (currentID == adsbObj.lastID)):
+        if ((curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD) and currentID == adsbObj.lastID):
             dsp.clearICAOid()
             dsp.clearCallsign()
             dsp.clearFlightData()
