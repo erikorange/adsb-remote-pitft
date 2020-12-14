@@ -35,7 +35,7 @@ class Display():
             self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight))
         else:
             pygame.mouse.set_visible(False)
-            flags = FULLSCREEN | DOUBLEBUF | HWSURFACE
+            flags = pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE
             self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
 
         self.lcd = self.__lcd
@@ -48,23 +48,25 @@ class Display():
             sansFont = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
             monoFont = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"
 
-        self.__idFont = pygame.font.SysFont(monoFont, 40) # ICAO ID
-        self.__csFont = pygame.font.SysFont(sansFont, 52) # callsign
-        self.__fltFont = pygame.font.SysFont(monoFont, 35) # flight data
-        self.__lastSeenFont = pygame.font.SysFont(sansFont, 25) # time last seen
-        self.__distFont = pygame.font.SysFont(sansFont, 40) # distance and bearing
-        self.__btnFont = pygame.font.SysFont(sansFont, 13)
-        self.__recentFont= pygame.font.SysFont(sansFont, 25)
-        self.__statsFont= pygame.font.SysFont(sansFont, 25)
-        self.__optsFont = pygame.font.SysFont(sansFont, 17)
-        self.__titleFont= pygame.font.SysFont(sansFont, 18)
-        self.__radarFont = pygame.font.SysFont(sansFont, 20)
-        self.__recentHeaderFont = pygame.font.SysFont(sansFont, 30)
-        self.btnFont = pygame.font.SysFont(sansFont, 30)
-        self.btnRadarFont = pygame.font.SysFont(monoFont, 50)
-        self.__rangeFont = pygame.font.SysFont(monoFont, 20)
-        self.__infoFont = pygame.font.SysFont(sansFont, 45)
+        self.__idFont           = self.__defineFont(self.__winFlag, monoFont, 40) # ICAO ID
+        self.__csFont           = self.__defineFont(self.__winFlag, sansFont, 52) # callsign
+        self.__fltFont          = self.__defineFont(self.__winFlag, monoFont, 35) # flight data
+        self.__lastSeenFont     = self.__defineFont(self.__winFlag, sansFont, 25) # time last seen
+        self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 40) # distance and bearing
+        self.__recentHeaderFont = self.__defineFont(self.__winFlag, sansFont, 30) # headers for civ and mil recents
+        self.__recentFont       = self.__defineFont(self.__winFlag, sansFont, 25) # civ and mil recents
+        self.__radarFont        = self.__defineFont(self.__winFlag, sansFont, 20) # NSEW letters
+        self.__rangeFont        = self.__defineFont(self.__winFlag, monoFont, 20) # radar "out of range"
+        self.__infoFont         = self.__defineFont(self.__winFlag, sansFont, 45) # info page
+        self.btnFont            = self.__defineFont(self.__winFlag, sansFont, 30) # buttons
+        self.btnRadarFont       = self.__defineFont(self.__winFlag, monoFont, 50) # radar +/- buttons
 
+
+    def __defineFont(self, winflag, fontFamily, size):
+        if (self.__winFlag):
+            return pygame.font.SysFont(fontFamily, size)
+        else:
+            return pygame.font.Font(fontFamily, size)
 
     def __initColors(self):
         self.__green = (0,255,0)
@@ -339,23 +341,6 @@ class Display():
         x = cX + radius * math.cos(math.radians(angle))
         y = cY + radius * math.sin(math.radians(angle))
         return(int(x),int(y))
-
-    def updateCallsignCount(self, adsbCnt,civCnt, milCnt):
-        pygame.draw.rect(self.__lcd, self.__black, (0,391,self.__screenWidth/2,31))
-        xpos = 0
-        civLab = self.__statsFont.render("civ:", 1, self.__cyan)
-        self.__lcd.blit(civLab, (xpos,393))
-        civNum = self.__statsFont.render("{:,}".format(civCnt), 1, self.__white)
-        xpos = xpos + civLab.get_width()+6
-        self.__lcd.blit(civNum, (xpos,393))
-
-        civRect = civNum.get_rect()
-        xpos = xpos + civRect.right + 60
-        milLab = self.__statsFont.render("mil:", 1, self.__cyan)
-        self.__lcd.blit(milLab, (xpos,393))
-        milNum = self.__statsFont.render("{:,}".format(milCnt), 1, self.__white)
-        xpos = xpos + milLab.get_width()+6
-        self.__lcd.blit(milNum, (xpos,393))
 
     def refreshDisplay(self):
         pygame.display.update()
