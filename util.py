@@ -21,7 +21,18 @@ class Util:
     @staticmethod
     def setCurrentDir(dirpath):
         os.chdir(dirpath)
+    
+    @staticmethod
+    def getGndSpeedText(kts_s):
+        try:
+            kts = int(kts_s)
+        except ValueError:
+            return ''
         
+        mph = int(kts*1.151)
+        return f'{mph} mph'
+
+
     @staticmethod
     def timestamp(txt):
         print(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' ' + txt)
