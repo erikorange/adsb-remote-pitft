@@ -79,7 +79,6 @@ def holdOn():
     adsbObj.clearLastFlightData()
     dsp.clearLastSeen()
     dsp.clearRecentsPane()
-    radarScale = 50
     dsp.drawRadar(600,195,165,radarScale)
     plusBtn.drawButton(Button.State.ON)
     minusBtn.drawButton(Button.State.ON)
@@ -169,13 +168,15 @@ def infoOn():
     return
 
 def infoOff():
-    global curState, lastState, holdBtnState, milBtnState, radarScale, civRecents, milRecents, currentCallsign
+    global curState, lastState, holdBtnState, milBtnState, radarScale, civRecents, milRecents, currentCallsign, posList
     dsp.clearDisplayArea()
     curState = lastState
     holdBtn.drawButton(holdBtnState)
     milBtn.drawButton(milBtnState)
     if (curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD):
         dsp.drawRadar(600,195,165,radarScale)
+        for coord in posList:
+            dsp.drawRadarBlip(coord[2], coord[3])
         plusBtn.drawButton(Button.State.ON)
         minusBtn.drawButton(Button.State.ON)
         dsp.displayICAOid(adsbObj.lastID)
@@ -305,6 +306,7 @@ while True:
 
 
         # Refresh the recents display if we have a callsign and if we're in a mode that displays them
+        #TODO add hold modes
         if (hasCallsign and (curState == State.CIV_MIL or curState == State.MIL_ONLY)):
             if (isMilCallsign):
                 dsp.displayMilRecents(milRecents, currentCallsign)
@@ -331,16 +333,12 @@ while True:
 
             # Here, last seen is the time for any airplace.  might not update quickly late at night.
         
-        #TODO - keep gathering positions if we were in hold mode but now we're in info mode
-        #if curstate=info and laststate was -> the entire condition below)
-        #  if (adsbObj.lat != "" and adsbObj.lon != ""):
-                #dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-                #bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-                #dsp.displayDistance(dist, bearing)
-                #dsp.drawRadarBlip(dist, bearing)
-                #posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
-                #
-                # then in info off...if was hold modes then redraw position list, like in +/- buttons
+        # keep gathering positions if we were in hold mode but now we're in info mode
+        if (curState == State.INFO and ((lastState == State.CIV_MIL_HOLD or lastState == State.MIL_ONLY_HOLD) and currentID == adsbObj.lastID)):
+            if (adsbObj.lat != "" and adsbObj.lon != ""):
+                dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
+                posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
 
         if ((curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD) and currentID == adsbObj.lastID):
             dsp.clearICAOid()
@@ -355,7 +353,6 @@ while True:
                 dsp.displayDistance(dist, bearing)
                 dsp.drawRadarBlip(dist, bearing)
                 posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
-                #TODO make setters or 1 method
                 adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
             elif (not adsbObj.lastDist is None):
                 dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)
