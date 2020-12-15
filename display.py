@@ -254,8 +254,13 @@ class Display():
 
         if (delta > 180.0):                   # older than 3 minutes
             lsColor = self.__red
+            print("Red Current: " + str(cur_dt))
+            print("Red    Last: " + str(lst_dt))
+
         elif (delta > 60.0):                   # older than 1 minute
             lsColor = self.__medYellow
+            print("Yel Current: " + str(cur_dt))
+            print("Yel    Last: " + str(lst_dt))
         else:
             lsColor = self.__medGreen
     
@@ -311,17 +316,17 @@ class Display():
         xpos = 0
         ypos = 190
         spacer = 35
-        txt = self.__fltFont.render("Alt: " + altitude, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Alt: {altitude}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos))
-        txt = self.__fltFont.render("Lat: " + lat, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Lat: {lat}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer))
-        txt = self.__fltFont.render("Lon:" + lon, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Lon:{lon}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*2))
-        txt = self.__fltFont.render("VRt: " + verticalRate, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'VRt: {verticalRate}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*3))
-        txt = self.__fltFont.render("GSp: " + groundSpeed, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'GSp: {Util.getGndSpeedText(groundSpeed)}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*4))
-        txt = self.__fltFont.render("Sqk: " + squawk, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Sqk: {squawk}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*5))
 
     def clearFlightData(self):
@@ -407,7 +412,7 @@ class Display():
         pygame.draw.line(self.__lcd, radarColor, (radarX - radarRadius, radarY + radarRadius + (textOffset*3)-10), (radarX - radarRadius,  radarY + radarRadius + (textOffset*3)+10), width=1)
         pygame.draw.line(self.__lcd, radarColor, (radarX + radarRadius, radarY + radarRadius + (textOffset*3)-10), (radarX + radarRadius,  radarY + radarRadius + (textOffset*3)+10), width=1)
 
-        txt = self.__radarFont.render(" " + str(maxBlipDistance*2) + " mi ", 1, radarColor, self.__black)
+        txt = self.__radarFont.render(" " + str(maxBlipDistance*2) + " mi ", 1, self.__green, self.__black)
         txtCenterX = radarX
         txtCenterY = radarY + radarRadius + (textOffset*3)
         txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
