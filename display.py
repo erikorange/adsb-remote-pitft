@@ -69,24 +69,26 @@ class Display():
             return pygame.font.Font(fontFamily, size)
 
     def __initColors(self):
-        self.__green = (0,255,0)
-        self.__medGreen = (0,128,0)
-        self.__black = (0,0,0)
-        self.__yellow = (255,255,0)
-        self.__medYellow = (128,128,0)
-        self.__mediumBlue = (100,149,237)
-        self.__cyan = (0,128,128)
-        self.__darkRed = (64,0,0)
-        self.__medRed = (128,0,0)
-        self.__darkPurple=(64,0,64)
-        self.__medPurple=(128,0,128)
-        self.__medOrange=(255,120,0)
-        self.__darkOrange=(128,60,0)
-        self.__white = (255,255,255)
-        self.__easyWhite = (200,200,200)
-        self.__gray = (128,128,128)
-        self.__red = (255,0,0)
-        self.__blue = (0,0,255)
+        self.__black        = (0,0,0)
+        self.__red          = (255,0,0)
+        self.__medRed       = (128,0,0)
+        self.__darkRed      = (64,0,0)
+        self.__medOrange    = (255,120,0)
+        self.__darkOrange   = (128,60,0)
+        self.__yellow       = (255,255,0)
+        self.__medYellow    = (128,128,0)
+        self.__green        = (0,255,0)
+        self.__medGreen     = (0,128,0)
+        self.__blue         = (0,0,255)
+        self.__mediumBlue   = (100,149,237)
+        self.__cyan         = (0,128,128)
+        self.__medPurple    = (128,0,128)
+        self.__darkPurple   = (64,0,64)
+        self.__white        = (255,255,255)
+        self.__easyWhite    = (200,200,200)
+        self.__gray         = (128,128,128)
+        
+        
 
     def drawDataLEDs(self):
         pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED1x,self.__dataLEDy), 5, 0)
@@ -185,7 +187,7 @@ class Display():
             txt = self.__recentFont.render(cs[:8], 1, foreColor, backColor)
             self.__lcd.blit(txt, (xpos, ypos))
             ypos += 32
-    
+
     def displayMilRecents(self, recentCs, currentCs):
         xpos = 641
         yAnchor = 75
