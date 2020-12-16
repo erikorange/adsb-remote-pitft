@@ -44,7 +44,7 @@ def exitSystem():
 def powerOff():
     Util.shutdownSystem()
 
-def zoomIn():
+def zoomBtnOut():
     global posList, radarScale
     radarScale -= 5
     if (radarScale < 5):
@@ -55,7 +55,7 @@ def zoomIn():
     for coord in posList:
         dsp.drawRadarBlip(coord[2], coord[3])
 
-def zoomOut():
+def zoomBtnIn():
     global posList, radarScale
     radarScale += 5
     if (radarScale > 150):
@@ -67,10 +67,9 @@ def zoomOut():
         dsp.drawRadarBlip(coord[2], coord[3])
 
 
-def holdOn():
+def holdBtnOn():
     global curState, adsbObj, posList, radarScale
     if (curState == State.CIV_MIL):
-        milBtn.drawButton(Button.State.DISABLED)
         curState = State.CIV_MIL_HOLD
 
     elif (curState == State.MIL_ONLY):
@@ -84,7 +83,7 @@ def holdOn():
     minusBtn.drawButton(Button.State.ON)
     posList=[]
     
-def holdOff():
+def holdBtnOff():
     global curState, adsbObj, currentCallsign, lastSeenDateTime
     if (curState == State.CIV_MIL_HOLD):
         curState = State.CIV_MIL
@@ -95,7 +94,6 @@ def holdOff():
 
     plusBtn.drawButton(Button.State.HIDDEN)
     minusBtn.drawButton(Button.State.HIDDEN)
-
     adsbObj.clearLastCallsignAndID()
     adsbObj.clearLastFlightData()
     dsp.clearDistance()
@@ -106,8 +104,22 @@ def holdOff():
     dsp.displayMilRecents(milRecents, currentCallsign)
     lastSeenDateTime = ()
     
-def milOn():
+def milBtnOn():
     global curState, lastSeenDateTime, adsbObj
+
+    if (curState == State.CIV_MIL_HOLD):
+        holdBtn.drawButton(Button.State.OFF)
+        plusBtn.drawButton(Button.State.HIDDEN)
+        minusBtn.drawButton(Button.State.HIDDEN)
+        adsbObj.clearLastCallsignAndID()
+        adsbObj.clearLastFlightData()
+        dsp.clearDistance()
+        dsp.clearFlightData()
+        dsp.clearRadar()
+        dsp.drawRecentsPane()
+        dsp.displayCivRecents(civRecents, currentCallsign)
+        dsp.displayMilRecents(milRecents, currentCallsign)
+        lastSeenDateTime = ()
 
     curState = State.MIL_ONLY
     dsp.clearICAOid()
@@ -116,25 +128,36 @@ def milOn():
     dsp.clearFlightData()
     dsp.clearLastSeen()
     lastSeenDateTime = ()
-    # Entering Mil Mode clears the ID and callsign.  Disable the Hold button until we get a mil ID and callsign (otherwise there's nothing to hold on)
-    holdBtn.drawButton(Button.State.DISABLED)
+    
 
-def milOff():
+def milBtnOff():
     global curState, lastSeenDateTime
 
     if (curState == State.MIL_ONLY_HOLD):
-        curState = State.CIV_MIL_HOLD
+        holdBtn.drawButton(Button.State.OFF)
+        plusBtn.drawButton(Button.State.HIDDEN)
+        minusBtn.drawButton(Button.State.HIDDEN)
+        adsbObj.clearLastCallsignAndID()
+        adsbObj.clearLastFlightData()
+        dsp.clearDistance()
+        dsp.clearFlightData()
+        dsp.clearRadar()
+        dsp.drawRecentsPane()
+        dsp.displayCivRecents(civRecents, currentCallsign)
+        dsp.displayMilRecents(milRecents, currentCallsign)
+        lastSeenDateTime = ()
 
     else:
-        curState = State.CIV_MIL
+    # curState = State.MIL_ONLY
         dsp.clearICAOid()
         dsp.clearCallsign()
         dsp.clearFlightData()
         dsp.clearLastSeen()
         lastSeenDateTime = ()
+    
+    curState = State.CIV_MIL
 
-    if (holdBtn.getState() == Button.State.DISABLED):
-        holdBtn.drawButton(Button.State.OFF)
+
 
 def bigOn():
     return
@@ -235,8 +258,6 @@ startCount = 0
 squitterRate = 0
 delta = 0
 
-
-
 medRed = (80,0,0)
 medPurple = (80,0,80)
 medBlue = (0,0,80)
@@ -254,9 +275,9 @@ dsp.drawRecentsPane()
 dsp.drawDataLEDs()
 
 buttonList = []
-holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdOn, holdOff, Button.State.OFF, Button.Type.STICKY)
+holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdBtnOn, holdBtnOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(holdBtn)
-milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milOn, milOff, Button.State.OFF, Button.Type.STICKY)
+milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milBtnOn, milBtnOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(milBtn)
 infoBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "INFO", infoOn, infoOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(infoBtn)
@@ -267,9 +288,9 @@ buttonList.append(exitBtn)
 #offBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "OFF", powerOff, None, Button.State.OFF, Button.Type.MOMENTARY)
 #buttonList.append(offBtn)
 
-plusBtn = Button(dsp.lcd, 545, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "+", zoomOut, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+plusBtn = Button(dsp.lcd, 545, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "+", zoomBtnOut, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 buttonList.append(plusBtn)
-minusBtn = Button(dsp.lcd, 605, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "-", zoomIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+minusBtn = Button(dsp.lcd, 605, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "-", zoomBtnIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 buttonList.append(minusBtn)
 
 pygame.display.update()
@@ -306,16 +327,11 @@ while True:
 
 
         # Refresh the recents display if we have a callsign and if we're in a mode that displays them
-        #TODO add hold modes
         if (hasCallsign and (curState == State.CIV_MIL or curState == State.MIL_ONLY)):
             if (isMilCallsign):
                 dsp.displayMilRecents(milRecents, currentCallsign)
             else:
                 dsp.displayCivRecents(civRecents, currentCallsign)
-
-
-     #TODO Mil Hold Mil Mil = messed up display
-     # Should Be: Mil Hold Mil -> this disables Mil mode, which when Hold is on (it is), Mil should be disabled.   
 
 
         if ((curState == State.CIV_MIL and hasCallsign) or (curState == State.MIL_ONLY and isMilCallsign)):
