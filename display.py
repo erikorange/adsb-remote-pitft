@@ -49,9 +49,12 @@ class Display():
             monoFont = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"
 
         self.__idFont           = self.__defineFont(self.__winFlag, monoFont, 40) # ICAO ID
+        self.__idFontBig        = self.__defineFont(self.__winFlag, monoFont, 130) # ICAO ID
         self.__csFont           = self.__defineFont(self.__winFlag, sansFont, 52) # callsign
+        self.__csFontBig        = self.__defineFont(self.__winFlag, sansFont, 170) # callsign
         self.__fltFont          = self.__defineFont(self.__winFlag, monoFont, 35) # flight data
         self.__lastSeenFont     = self.__defineFont(self.__winFlag, sansFont, 25) # time last seen
+        self.__lastSeenFontBig  = self.__defineFont(self.__winFlag, sansFont, 50) # time last seen
         self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 40) # distance and bearing
         self.__recentHeaderFont = self.__defineFont(self.__winFlag, sansFont, 30) # headers for civ and mil recents
         self.__recentFont       = self.__defineFont(self.__winFlag, sansFont, 25) # civ and mil recents
@@ -227,6 +230,14 @@ class Display():
     def clearICAOid(self):
         pygame.draw.rect(self.__lcd, self.__black, (40,0,self.__screenWidth/2-40,39))
 
+    def displayICAOidBig(self, id):
+        txt = self.__idFontBig.render(id, 1, self.__yellow)
+        xpos = (self.__screenWidth - txt.get_width())/2
+        self.__lcd.blit(txt, (xpos, 20))
+
+    def clearICAOidBig(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,40,self.__screenWidth,100))
+
     def displayCallsign(self, cs, isMil):
         txt = self.__csFont.render(cs, 1, self.__yellow)
         xpos = ((self.__screenWidth/2) - txt.get_width())/2
@@ -238,6 +249,18 @@ class Display():
     def clearCallsign(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,43,self.__screenWidth/2,55))
 
+    def displayCallsignBig(self, cs, isMil):
+        txt = self.__csFontBig.render(cs, 1, self.__yellow)
+        xpos = (self.__screenWidth - txt.get_width())/2
+        if (isMil):
+            pygame.draw.rect(self.__lcd, self.__medRed, (0,160,self.__screenWidth,150))
+        
+        self.__lcd.blit(txt, (xpos, 140))
+
+    def clearCallsignBig(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,160,self.__screenWidth,150))
+
+        
     def displayLastSeen(self, lastSeen):
         # check if lastSeen hasn't been populated yet upon startup
         if (not lastSeen):
@@ -256,13 +279,10 @@ class Display():
 
         if (delta > 180.0):                   # older than 3 minutes
             lsColor = self.__red
-            print("Red Current: " + str(cur_dt))
-            print("Red    Last: " + str(lst_dt))
-
+            
         elif (delta > 60.0):                   # older than 1 minute
             lsColor = self.__medYellow
-            print("Yel Current: " + str(cur_dt))
-            print("Yel    Last: " + str(lst_dt))
+
         else:
             lsColor = self.__medGreen
     
@@ -272,8 +292,41 @@ class Display():
         self.__lcd.blit(txt, (xpos, 105))
 
     def clearLastSeen(self):
-        pygame.draw.rect(self.__lcd, self.__black, (0,105,self.__screenWidth/2,30))
+        pygame.draw.rect(self.__lcd, self.__black, (0,105,self.__screenWidth/2,27))
 
+            
+    def displayLastSeenBig(self, lastSeen):
+        # check if lastSeen hasn't been populated yet upon startup
+        if (not lastSeen):
+            return
+
+        dateParts = lastSeen[0].split("/")
+        formattedDate = dateParts[1] + "-" + dateParts[2] + "-" + dateParts[0]
+        formattedTime = lastSeen[1].split(".")[0]
+
+        cur_dt = datetime.datetime.now()
+        try:
+            lst_dt = datetime.datetime.strptime(lastSeen[0] + " " + lastSeen[1], "%Y/%m/%d %H:%M:%S.%f")
+            delta = abs((cur_dt - lst_dt).total_seconds())
+        except ValueError:
+            delta = 0
+
+        if (delta > 180.0):                   # older than 3 minutes
+            lsColor = self.__red
+            
+        elif (delta > 60.0):                   # older than 1 minute
+            lsColor = self.__medYellow
+
+        else:
+            lsColor = self.__medGreen
+    
+        self.clearLastSeenBig()
+        txt = self.__lastSeenFontBig.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, lsColor)
+        xpos = (self.__screenWidth - txt.get_width())/2
+        self.__lcd.blit(txt, (xpos, 340))
+
+    def clearLastSeenBig(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,340,self.__screenWidth,60))
         
     def displayFlightData(self, adsbObj, persist):
         self.clearFlightData()

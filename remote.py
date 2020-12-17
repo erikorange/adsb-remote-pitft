@@ -81,6 +81,7 @@ def holdBtnOn():
     dsp.drawRadar(600,195,165,radarScale)
     plusBtn.drawButton(Button.State.ON)
     minusBtn.drawButton(Button.State.ON)
+    bigBtn.drawButton(Button.State.DISABLED)
     posList=[]
     
 def holdBtnOff():
@@ -94,6 +95,7 @@ def holdBtnOff():
 
     plusBtn.drawButton(Button.State.HIDDEN)
     minusBtn.drawButton(Button.State.HIDDEN)
+    bigBtn.drawButton(Button.State.OFF)
     adsbObj.clearLastCallsignAndID()
     adsbObj.clearLastFlightData()
     dsp.clearDistance()
@@ -106,6 +108,8 @@ def holdBtnOff():
     
 def milBtnOn():
     global curState, lastSeenDateTime, adsbObj
+
+    # if curstate = civ_mil_big then curstate=mil_big; if curcallsign isn't mil then clear everything
 
     if (curState == State.CIV_MIL_HOLD):
         holdBtn.drawButton(Button.State.OFF)
@@ -133,6 +137,8 @@ def milBtnOn():
 def milBtnOff():
     global curState, lastSeenDateTime
 
+    # if curstate = mil_big then curstate=civ_mil_big;
+
     if (curState == State.MIL_ONLY_HOLD):
         holdBtn.drawButton(Button.State.OFF)
         plusBtn.drawButton(Button.State.HIDDEN)
@@ -157,12 +163,43 @@ def milBtnOff():
     
     curState = State.CIV_MIL
 
-
-
 def bigOn():
+    global curState, lastState, holdBtnState, milBtnState
+    
+    dsp.clearDisplayArea()
+    lastState = curState
+    # BIG is only available in these 2 states
+    if (lastState == State.CIV_MIL):
+        curState = State.CIV_MIL_BIG
+    else:
+        curState = State.MIL_ONLY_BIG
+
+    # save button states
+    holdBtnState = holdBtn.getState()
+    milBtnState = milBtn.getState()
+    holdBtn.drawButton(Button.State.HIDDEN)
+    milBtn.drawButton(Button.State.HIDDEN)
+    infoBtn.drawButton(Button.State.HIDDEN)
+
     return
 
 def bigOff():
+    global curState, lastState, holdBtnState, milBtnState, civRecents, milRecents, currentCallsign
+    dsp.clearDisplayArea()
+    curState = lastState
+    holdBtn.drawButton(holdBtnState)
+    milBtn.drawButton(milBtnState)
+    infoBtn.drawButton(Button.State.OFF)
+
+    # mil mode might have been turned on, but a mil callsign hasn't been received yet.  Skip if no callsign:
+    if (not (adsbObj.lastCallsign is None)):
+        dsp.displayCallsign(adsbObj.lastCallsign, Util.isMilCallsign(adsbObj.lastCallsign))
+    dsp.displayFlightData(adsbObj, True)
+
+    dsp.drawRecentsPane()
+    dsp.displayCivRecents(civRecents, currentCallsign)
+    dsp.displayMilRecents(milRecents, currentCallsign)
+
     return
 
 def infoOn():
@@ -182,6 +219,7 @@ def infoOn():
     milBtnState = milBtn.getState()
     holdBtn.drawButton(Button.State.HIDDEN)
     milBtn.drawButton(Button.State.HIDDEN)
+    bigBtn.drawButton(Button.State.HIDDEN)
 
     if (lastState == State.MIL_ONLY_HOLD or lastState == State.CIV_MIL_HOLD):
         plusBtn.drawButton(Button.State.HIDDEN)
@@ -196,6 +234,8 @@ def infoOff():
     curState = lastState
     holdBtn.drawButton(holdBtnState)
     milBtn.drawButton(milBtnState)
+    bigBtn.drawButton(Button.State.OFF)
+
     if (curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD):
         dsp.drawRadar(600,195,165,radarScale)
         for coord in posList:
@@ -203,7 +243,9 @@ def infoOff():
         plusBtn.drawButton(Button.State.ON)
         minusBtn.drawButton(Button.State.ON)
         dsp.displayICAOid(adsbObj.lastID)
-        dsp.displayCallsign(adsbObj.lastCallsign, Util.isMilCallsign(adsbObj.lastCallsign))
+        # mil mode might have been turned on, but a mil callsign hasn't been received yet.  Skip if no callsign:
+        if (not (adsbObj.lastCallsign is None)):
+            dsp.displayCallsign(adsbObj.lastCallsign, Util.isMilCallsign(adsbObj.lastCallsign))
         dsp.displayFlightData(adsbObj, True)
 
     elif (curState == State.CIV_MIL or curState == State.MIL_ONLY):
@@ -281,8 +323,8 @@ milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL",
 buttonList.append(milBtn)
 infoBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "INFO", infoOn, infoOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(infoBtn)
-#bigBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
-#buttonList.append(bigBtn)
+bigBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
+buttonList.append(bigBtn)
 exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, None, Button.State.OFF, Button.Type.MOMENTARY)
 buttonList.append(exitBtn)
 #offBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "OFF", powerOff, None, Button.State.OFF, Button.Type.MOMENTARY)
@@ -347,6 +389,14 @@ while True:
             if (curState == State.MIL_ONLY and isMilCallsign and holdBtn.getState() == Button.State.DISABLED):
                 holdBtn.drawButton(Button.State.OFF)
 
+        if ((curState == State.CIV_MIL_BIG and hasCallsign) or (curState == State.MIL_ONLY_BIG and isMilCallsign)):
+            dsp.clearICAOidBig()
+            dsp.clearCallsignBig()
+            dsp.displayICAOidBig(currentID)
+            dsp.displayCallsignBig(currentCallsign, isMilCallsign)
+            adsbObj.setLastCallsignAndID(currentCallsign, currentID)
+            lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
+
             # Here, last seen is the time for any airplace.  might not update quickly late at night.
         
         # keep gathering positions if we were in hold mode but now we're in info mode
@@ -376,8 +426,11 @@ while True:
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
             # Here, last seen is the time for this held airplane.  Will age as airplane flies out of range.
 
-        if (curState != State.INFO):
-            dsp.displayLastSeen((lastSeenDateTime))
+        if (curState != State.INFO and currentCallsign != ""):
+            if (curState == State.CIV_MIL_BIG or curState == State.MIL_ONLY_BIG):
+                dsp.displayLastSeenBig((lastSeenDateTime))
+            else:
+                dsp.displayLastSeen((lastSeenDateTime))
         
         if (curState == State.INFO):
             if (startAgain):
