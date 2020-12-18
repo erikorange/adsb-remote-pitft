@@ -51,7 +51,7 @@ class Display():
         self.__idFont           = self.__defineFont(self.__winFlag, monoFont, 40) # ICAO ID
         self.__idFontBig        = self.__defineFont(self.__winFlag, monoFont, 130) # ICAO ID
         self.__csFont           = self.__defineFont(self.__winFlag, sansFont, 52) # callsign
-        self.__csFontBig        = self.__defineFont(self.__winFlag, sansFont, 170) # callsign
+        self.__csFontBig        = self.__defineFont(self.__winFlag, sansFont, 155) # callsign
         self.__fltFont          = self.__defineFont(self.__winFlag, monoFont, 35) # flight data
         self.__lastSeenFont     = self.__defineFont(self.__winFlag, sansFont, 25) # time last seen
         self.__lastSeenFontBig  = self.__defineFont(self.__winFlag, sansFont, 50) # time last seen
@@ -255,7 +255,7 @@ class Display():
         if (isMil):
             pygame.draw.rect(self.__lcd, self.__medRed, (0,160,self.__screenWidth,150))
         
-        self.__lcd.blit(txt, (xpos, 140))
+        self.__lcd.blit(txt, (xpos, 148))
 
     def clearCallsignBig(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,160,self.__screenWidth,150))
