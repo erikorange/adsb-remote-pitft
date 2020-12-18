@@ -1,3 +1,4 @@
+#TODO HOLD INFO INFO BIG doesn't work -> BIG doesn't work, and then hold mode is active but recents are displayed.
 import sys
 import signal
 import time
