@@ -39,7 +39,7 @@ print("{:,} simulated squitters".format(total))
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sck.connect(('127.0.0.1', 49001))
 
-
+iteration = 1
 squitterFile = open(args.file, 'r')
 while True:
     idx = 0
@@ -60,9 +60,13 @@ while True:
             time.sleep(0.01)
             
         idx +=1
-        print("{:,}\r".format(idx), end="")
+        print(f"Pass {iteration}: {idx:,}\r", end="")
 
     if (not args.loop):
         break
+    else:
+        squitterFile.seek(0)
+        print(f"Pass {iteration}:                \r", end="")
+        iteration += 1
 
 squitterFile.close()
