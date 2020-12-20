@@ -1,4 +1,3 @@
-#TODO HOLD INFO INFO BIG doesn't work -> BIG doesn't work, and then hold mode is active but recents are displayed.
 import sys
 import signal
 import time
@@ -235,9 +234,9 @@ def infoOff():
     curState = lastState
     holdBtn.drawButton(holdBtnState)
     milBtn.drawButton(milBtnState)
-    bigBtn.drawButton(Button.State.OFF)
 
     if (curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD):
+        bigBtn.drawButton(Button.State.DISABLED)
         dsp.drawRadar(600,195,165,radarScale)
         for coord in posList:
             dsp.drawRadarBlip(coord[2], coord[3])
