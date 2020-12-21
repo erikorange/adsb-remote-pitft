@@ -51,7 +51,7 @@ class Display():
         self.__fltFont          = self.__defineFont(self.__winFlag, monoFont, 35) # flight data
         self.__lastSeenFont     = self.__defineFont(self.__winFlag, sansFont, 25) # time last seen
         self.__lastSeenFontBig  = self.__defineFont(self.__winFlag, sansFont, 50) # time last seen
-        self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 40) # distance and bearing
+        self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 38) # distance and bearing
         self.__recentHeaderFont = self.__defineFont(self.__winFlag, sansFont, 30) # headers for civ and mil recents
         self.__recentFont       = self.__defineFont(self.__winFlag, sansFont, 25) # civ and mil recents
         self.__infoFont         = self.__defineFont(self.__winFlag, sansFont, 45) # info page
