@@ -32,8 +32,9 @@ class Display():
             flags = pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE
             self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
 
-        #TODO make setter
-        self.lcd = self.__lcd
+    @property
+    def lcd(self):
+        return self.__lcd
 
     def __initFonts(self):
         if (self.__winFlag):
