@@ -30,7 +30,7 @@ class Radar():
             monoFont = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"
 
         self.__radarFont = self.__defineFont(self.__winFlag, sansFont, 20) # NSEW letters
-        self.__rangeFont = self.__defineFont(self.__winFlag, monoFont, 20) # radar "out of range"
+        self.__rangeFont = self.__defineFont(self.__winFlag, sansFont, 20) # radar "out of range"
 
         #crosshatches
         chAngle=0
@@ -56,7 +56,7 @@ class Radar():
     def addToPosList(self, lat, lon, dist, bearing):
         self.__posList.append((lat, lon, dist, bearing))
 
-    def drawRadar(self):
+    def drawRadarScreen(self):
         #draw radar circle
         pygame.draw.circle(self.__lcd, self.__radarColor, (self.__radarX, self.__radarY), self.__radarRadius, 1)
  
@@ -122,12 +122,12 @@ class Radar():
 
     def refreshDisplay(self):
         self.clearRadar()
-        self.drawRadar()
-        self.drawBlips()
+        self.drawRadarScreen()
+        self.plotTotalPath()
     
-    def drawBlips(self):
+    def plotTotalPath(self):
         for coord in self.__posList:
-            self.drawRadarBlip(coord[2], coord[3])
+            self.plotCurrentPos(coord[2], coord[3])
 
     def __circleXY(self, cX, cY, angle, radius):
         x = cX + radius * math.cos(math.radians(angle))
@@ -137,7 +137,7 @@ class Radar():
     def clearRadar(self):
         pygame.draw.rect(self.__lcd, self.__black, (400,0,400,416))
 
-    def drawRadarBlip(self, blipDistance, blipAngle):
+    def plotCurrentPos(self, blipDistance, blipAngle):
         if ((blipDistance != self.__oldBlipDistance) | (blipAngle != self.__oldBlipAngle)):
             self.__oldBlipAngle = blipAngle
             self.__oldBlipDistance = blipDistance
@@ -168,10 +168,11 @@ class Radar():
 
             return True
 
-    def __drawOutOfRange(self, inRange):
-        if (inRange):
-            pygame.draw.rect(self.__lcd, self.__black, (650,5,150,25))
+    def __drawOutOfRange(self, tooFarAway):
+        if (tooFarAway):
+            pygame.draw.rect(self.__lcd, self.__black, (675,5,125,25))
             txt = self.__rangeFont.render("Out of Range", 1, self.__red)
-            self.__lcd.blit(txt, (650, 5))
+            self.__lcd.blit(txt, (675, 5))
+
         else:
-            pygame.draw.rect(self.__lcd, self.__black, (650,5,150,25))
+            pygame.draw.rect(self.__lcd, self.__black, (675,5,125,25))
