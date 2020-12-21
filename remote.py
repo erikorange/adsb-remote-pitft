@@ -11,6 +11,7 @@ import datetime
 from display import Display
 from button import Button
 from adsb import Adsb
+from radar import Radar
 from util import Util
 
 class State(enum.Enum): 
@@ -37,7 +38,6 @@ def getHomeLatLon(filename):
     f.close()
     return lat, lon
 
-
 def exitSystem():
     sys.exit(0)
 
@@ -45,30 +45,15 @@ def powerOff():
     Util.shutdownSystem()
 
 def zoomBtnOut():
-    global posList, radarScale
-    radarScale -= 5
-    if (radarScale < 5):
-        radarScale = 5
-    
-    dsp.clearRadar()
-    dsp.drawRadar(600,195,165,radarScale)
-    for coord in posList:
-        dsp.drawRadarBlip(coord[2], coord[3])
+    radar.decreaseScale()
+    radar.refreshDisplay()
 
 def zoomBtnIn():
-    global posList, radarScale
-    radarScale += 5
-    if (radarScale > 150):
-        radarScale = 150
-    
-    dsp.clearRadar()
-    dsp.drawRadar(600,195,165,radarScale)
-    for coord in posList:
-        dsp.drawRadarBlip(coord[2], coord[3])
-
+    radar.increaseScale()
+    radar.refreshDisplay()
 
 def holdBtnOn():
-    global curState, adsbObj, posList, radarScale
+    global curState, adsbObj
     if (curState == State.CIV_MIL):
         curState = State.CIV_MIL_HOLD
 
@@ -78,11 +63,11 @@ def holdBtnOn():
     adsbObj.clearLastFlightData()
     dsp.clearLastSeen()
     dsp.clearRecentsPane()
-    dsp.drawRadar(600,195,165,radarScale)
+    radar.drawRadar()
+    radar.clearPosList()
     plusBtn.drawButton(Button.State.ON)
     minusBtn.drawButton(Button.State.ON)
     bigBtn.drawButton(Button.State.DISABLED)
-    posList=[]
     
 def holdBtnOff():
     global curState, adsbObj, currentCallsign, lastSeenDateTime
@@ -100,7 +85,7 @@ def holdBtnOff():
     adsbObj.clearLastFlightData()
     dsp.clearDistance()
     dsp.clearFlightData()
-    dsp.clearRadar()
+    radar.clearRadar()
     dsp.drawRecentsPane()
     dsp.displayCivRecents(civRecents, currentCallsign)
     dsp.displayMilRecents(milRecents, currentCallsign)
@@ -119,7 +104,7 @@ def milBtnOn():
         adsbObj.clearLastFlightData()
         dsp.clearDistance()
         dsp.clearFlightData()
-        dsp.clearRadar()
+        radar.clearRadar()
         dsp.drawRecentsPane()
         dsp.displayCivRecents(civRecents, currentCallsign)
         dsp.displayMilRecents(milRecents, currentCallsign)
@@ -147,7 +132,7 @@ def milBtnOff():
         adsbObj.clearLastFlightData()
         dsp.clearDistance()
         dsp.clearFlightData()
-        dsp.clearRadar()
+        radar.clearRadar()
         dsp.drawRecentsPane()
         dsp.displayCivRecents(civRecents, currentCallsign)
         dsp.displayMilRecents(milRecents, currentCallsign)
@@ -229,17 +214,17 @@ def infoOn():
     return
 
 def infoOff():
-    global curState, lastState, holdBtnState, milBtnState, radarScale, civRecents, milRecents, currentCallsign, posList
+    global curState, lastState, holdBtnState, milBtnState, civRecents, milRecents, currentCallsign
     dsp.clearDisplayArea()
     curState = lastState
     holdBtn.drawButton(holdBtnState)
     milBtn.drawButton(milBtnState)
+    bigBtn.drawButton(Button.State.OFF)
 
     if (curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD):
         bigBtn.drawButton(Button.State.DISABLED)
-        dsp.drawRadar(600,195,165,radarScale)
-        for coord in posList:
-            dsp.drawRadarBlip(coord[2], coord[3])
+        radar.drawRadar()
+        radar.drawBlips()
         plusBtn.drawButton(Button.State.ON)
         minusBtn.drawButton(Button.State.ON)
         dsp.displayICAOid(adsbObj.lastID)
@@ -274,6 +259,7 @@ HOME_LAT, HOME_LON = getHomeLatLon("home-lat-lon.txt")
 dsp = Display(winFlag)
 dsp.setupAdsbDisplay()
 adsbObj = Adsb()
+radar = Radar(dsp.lcd)
 
 civRecents = collections.deque(maxlen=10)
 civList = set()
@@ -284,8 +270,6 @@ milMode = False
 currentID = ''
 currentCallsign = ''
 lastSeenDateTime = ()
-posList=[]
-radarScale=50
 hasCallsign = False
 isMilCallsign = False
 adsbCount=0
@@ -404,7 +388,7 @@ while True:
             if (adsbObj.lat != "" and adsbObj.lon != ""):
                 dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
                 bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
-                posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
+                radar.addToPosList(adsbObj.lat, adsbObj.lon, dist, bearing)
 
         if ((curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD) and currentID == adsbObj.lastID):
             dsp.clearICAOid()
@@ -417,8 +401,8 @@ while True:
                 dist = Util.haversine(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
                 bearing = Util.calculateBearing(HOME_LAT, HOME_LON, float(adsbObj.lat), float(adsbObj.lon))
                 dsp.displayDistance(dist, bearing)
-                dsp.drawRadarBlip(dist, bearing)
-                posList.append((adsbObj.lat, adsbObj.lon, dist, bearing))
+                radar.drawRadarBlip(dist, bearing)
+                radar.addToPosList(adsbObj.lat, adsbObj.lon, dist, bearing)
                 adsbObj.lastDist, adsbObj.lastBearing = (dist, bearing)
             elif (not adsbObj.lastDist is None):
                 dsp.displayDistance(adsbObj.lastDist, adsbObj.lastBearing)

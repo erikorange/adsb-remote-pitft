@@ -1,7 +1,6 @@
 import os
 import pygame
 from pygame.locals import *
-import math
 import datetime
 from util import Util
 
@@ -13,12 +12,7 @@ class Display():
 
         self.__screenWidth = 800
         self.__screenHeight = 480
-
-        self.__radarLineAngle=0
-        self.__radarBlipGamma=255
-        self.__compassPoints=[]
-        self.__crosshatchLines=[]
-        self.__concentricRadii=[]
+        
         self.__dataFlipLEDs = False
         self.__dataLED1x = 10
         self.__dataLED2x = 23
@@ -38,6 +32,7 @@ class Display():
             flags = pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE
             self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
 
+        #TODO make setter
         self.lcd = self.__lcd
 
     def __initFonts(self):
@@ -58,12 +53,9 @@ class Display():
         self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 40) # distance and bearing
         self.__recentHeaderFont = self.__defineFont(self.__winFlag, sansFont, 30) # headers for civ and mil recents
         self.__recentFont       = self.__defineFont(self.__winFlag, sansFont, 25) # civ and mil recents
-        self.__radarFont        = self.__defineFont(self.__winFlag, sansFont, 20) # NSEW letters
-        self.__rangeFont        = self.__defineFont(self.__winFlag, monoFont, 20) # radar "out of range"
         self.__infoFont         = self.__defineFont(self.__winFlag, sansFont, 45) # info page
         self.btnFont            = self.__defineFont(self.__winFlag, sansFont, 30) # buttons
         self.btnRadarFont       = self.__defineFont(self.__winFlag, monoFont, 50) # radar +/- buttons
-
 
     def __defineFont(self, winflag, fontFamily, size):
         if (self.__winFlag):
@@ -91,8 +83,6 @@ class Display():
         self.__easyWhite    = (200,200,200)
         self.__gray         = (128,128,128)
         
-        
-
     def drawDataLEDs(self):
         pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED1x,self.__dataLEDy), 5, 0)
         pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED2x,self.__dataLEDy), 5, 0)
@@ -110,7 +100,6 @@ class Display():
         
         self.__dataFlipLEDs = not self.__dataFlipLEDs
         return
-
 
     def clearDisplayArea(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
@@ -260,7 +249,6 @@ class Display():
     def clearCallsignBig(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,160,self.__screenWidth,150))
 
-        
     def displayLastSeen(self, lastSeen):
         # check if lastSeen hasn't been populated yet upon startup
         if (not lastSeen):
@@ -294,7 +282,6 @@ class Display():
     def clearLastSeen(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,105,self.__screenWidth/2,27))
 
-            
     def displayLastSeenBig(self, lastSeen):
         # check if lastSeen hasn't been populated yet upon startup
         if (not lastSeen):
@@ -397,124 +384,5 @@ class Display():
     def clearDistance(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,135,self.__screenWidth/2,42))
 
-    def circleXY(self, cX, cY, angle, radius):
-        x = cX + radius * math.cos(math.radians(angle))
-        y = cY + radius * math.sin(math.radians(angle))
-        return(int(x),int(y))
-
     def refreshDisplay(self):
         pygame.display.update()
-
-    def drawRadar(self, radarX, radarY, radarRadius, maxBlipDistance):
-        self.__radarX = radarX
-        self.__radarY = radarY
-        self.__radarRadius = radarRadius
-        self.__maxBlipDistance = maxBlipDistance
-
-        #crosshatches
-        chAngle=0
-        for a in range(0, 4):
-            chAngle=a*45
-            self.__crosshatchLines.append([self.circleXY(radarX, radarY, chAngle, radarRadius), self.circleXY(radarX, radarY, chAngle+180, radarRadius)])
-        
-        #concentric circles
-        f=0.25
-        for a in range(0, 3):
-            self.__concentricRadii.append(int(radarRadius*f))
-            f=f+0.25
-
-        radarColor=(0,80,0)
-
-        #draw radar circle
-        pygame.draw.circle(self.__lcd, radarColor, (radarX,radarY), radarRadius, 1)
- 
-        #crosshatches
-        for a in range(0, len(self.__crosshatchLines)):
-            pygame.draw.line(self.__lcd, radarColor, self.__crosshatchLines[a][0], self.__crosshatchLines[a][1])
-       
-        # concentric circles
-        for a in range(0, len(self.__concentricRadii)):
-            pygame.draw.circle(self.__lcd, radarColor, (radarX,radarY), self.__concentricRadii[a], 1)
-
-        textOffset = 13
-        # compass directions
-        txt = self.__radarFont.render("N", 1, self.__green)
-        txtCenterX = radarX
-        txtCenterY = radarY - radarRadius - textOffset
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        txt = self.__radarFont.render("S", 1, self.__green)
-        txtCenterX = radarX
-        txtCenterY = radarY + radarRadius + textOffset
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        txt = self.__radarFont.render("W", 1, self.__green)
-        txtCenterX = radarX - radarRadius - textOffset
-        txtCenterY = radarY
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        txt = self.__radarFont.render("E", 1, self.__green)
-        txtCenterX = radarX + radarRadius + textOffset
-        txtCenterY = radarY
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        # radar distance
-        pygame.draw.line(self.__lcd, radarColor, (radarX - radarRadius, radarY + radarRadius + (textOffset*3)), (radarX + radarRadius,  radarY + radarRadius + (textOffset*3)), width=1)
-        pygame.draw.line(self.__lcd, radarColor, (radarX - radarRadius, radarY + radarRadius + (textOffset*3)-10), (radarX - radarRadius,  radarY + radarRadius + (textOffset*3)+10), width=1)
-        pygame.draw.line(self.__lcd, radarColor, (radarX + radarRadius, radarY + radarRadius + (textOffset*3)-10), (radarX + radarRadius,  radarY + radarRadius + (textOffset*3)+10), width=1)
-
-        txt = self.__radarFont.render(" " + str(maxBlipDistance*2) + " mi ", 1, self.__green, self.__black)
-        txtCenterX = radarX
-        txtCenterY = radarY + radarRadius + (textOffset*3)
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        self.__oldBlipAngle=0
-        self.__oldBlipDistance=0
-        self.__oldPlotX = 0
-        self.__oldPlotY = 0
-
-    def clearRadar(self):
-        pygame.draw.rect(self.__lcd, self.__black, (400,0,400,416))
-
-    def drawRadarBlip(self, blipDistance, blipAngle):
-        if ((blipDistance != self.__oldBlipDistance) | (blipAngle != self.__oldBlipAngle)):
-            self.__oldBlipAngle = blipAngle
-            self.__oldBlipDistance = blipDistance
-            if (blipDistance > self.__maxBlipDistance):
-                self.drawOutOfRange(True)
-                return False
-
-            self.drawOutOfRange(False)
-            #transform blip distance proportionally from mileage to circle radius
-            blipRatio=self.__maxBlipDistance/self.__radarRadius
-            blipRadius=int(blipDistance/blipRatio)
-            #calculate blip (x,y)
-            blipX=blipRadius*math.cos(math.radians(blipAngle))
-            blipY=blipRadius*math.sin(math.radians(blipAngle))
-
-            #transform the coordinates from Unit Circle to Mathematics Circle
-            plotX=blipY
-            plotY=-blipX
-
-            #overwrite the old blip, if there is one
-            if ((self.__oldPlotX != 0) & (self.__oldPlotY != 0)):
-                pygame.draw.circle(self.__lcd, self.__darkOrange, (self.__radarX+int(self.__oldPlotX),self.__radarY+int(self.__oldPlotY)), 2)
-                
-            #plot the blip
-            pygame.draw.circle(self.__lcd, self.__green, (self.__radarX+int(plotX),self.__radarY+int(plotY)), 2)
-            self.__oldPlotX = plotX
-            self.__oldPlotY = plotY
-
-            return True
-
-    def drawOutOfRange(self, inRange):
-        if (inRange):
-            txt = self.__rangeFont.render("Out of Range", 1, self.__red)
-            self.__lcd.blit(txt, (650, 5))
-        else:
-            pygame.draw.rect(self.__lcd, self.__black, (650,5,150,25))
