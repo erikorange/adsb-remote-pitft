@@ -189,13 +189,20 @@ def bigOff():
     return
 
 def infoOn():
-    global curState, lastState, holdBtnState, milBtnState, startAgain, startTime, startCount, endTime, squitterRate, delta
+    global curState, lastState, holdBtnState, milBtnState, startAgain, startTime, startCount, endTime, squitterRate, delta, cpuTemp, winFlag
     startAgain = True
     startTime = None
     endTime = None
     startCount = 0
     squitterRate = 0
     delta = 0
+
+    if (winFlag):
+        cpuTemp = "n/a"
+    else:
+        temps = Util.getCPUTemp()
+        deg = u'\N{DEGREE SIGN}'
+        cpuTemp = f'{temps[0]}{deg}C    {temps[1]}{deg}F'
 
     dsp.clearDisplayArea()
     lastState = curState
@@ -212,7 +219,7 @@ def infoOn():
         minusBtn.drawButton(Button.State.HIDDEN)
         
     dsp.drawInfoPane()
-    return
+
 
 def infoOff():
     global curState, lastState, holdBtnState, milBtnState, civRecents, milRecents, currentCallsign
@@ -284,6 +291,7 @@ endTime = None
 startCount = 0
 squitterRate = 0
 delta = 0
+cpuTemp = ''
 
 medRed = (80,0,0)
 medPurple = (80,0,80)
@@ -420,7 +428,7 @@ while True:
                 squitterRate = adsbCount - startCount
                 startAgain = True
 
-            dsp.updateInfoPane(len(civList), len(milList), adsbCount, squitterRate)
+            dsp.updateInfoPane(len(civList), len(milList), adsbCount, squitterRate, cpuTemp)
 
 
     for event in pygame.event.get():
