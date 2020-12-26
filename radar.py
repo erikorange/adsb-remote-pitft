@@ -1,4 +1,5 @@
 import pygame
+import pygame.gfxdraw
 import math
 from util import Util
 
@@ -8,6 +9,7 @@ class Radar():
         self.__lcd = lcd
         self.__crosshatchLines=[]
         self.__concentricRadii=[]
+        self.__ticMarks=[]
         self.__SCALEMIN = 5
         self.__SCALEMAX = 150
         self.__radarX = 600
@@ -44,6 +46,16 @@ class Radar():
             self.__concentricRadii.append(int(self.__radarRadius*f))
             f=f+0.25
 
+        # tic marks
+        for a in range(0, 360, 10):
+            if a % 10 == 0:
+                ticLen = 6
+            else:
+                ticLen = 3
+
+            self.__ticMarks.append([self.__circleXY(self.__radarX, self.__radarY, a, self.__radarRadius), self.__circleXY(self.__radarX, self.__radarY, a, self.__radarRadius-ticLen)])
+        
+
     def __defineFont(self, winflag, fontFamily, size):
         if (Util.isWindows()):
             return pygame.font.SysFont(fontFamily, size)
@@ -68,6 +80,10 @@ class Radar():
         for a in range(0, len(self.__concentricRadii)):
             pygame.draw.circle(self.__lcd, self.__radarColor, (self.__radarX, self.__radarY), self.__concentricRadii[a], 1)
 
+        # ticmarks
+        for a in range(0, len(self.__ticMarks)):
+            pygame.draw.line(self.__lcd, self.__radarColor, self.__ticMarks[a][0], self.__ticMarks[a][1])
+            
         textOffset = 13
         # compass directions
         txt = self.__radarFont.render("N", 1, self.__green)
