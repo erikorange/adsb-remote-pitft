@@ -22,6 +22,7 @@ class State(enum.Enum):
     MIL_ONLY_HOLD = 5
     MIL_ONLY_BIG = 6
     INFO = 7
+    INFO_LIST = 8
 
 
 def shutdownEvent(signal, frame):
@@ -188,6 +189,19 @@ def bigOff():
 
     return
 
+def historyOn():
+    global curState
+    curState = State.INFO_LIST
+    dsp.clearDisplayArea()
+
+    # add next/prev buttons
+    # get num pages
+    # display page, turn on next/prev buttons
+    # disable prev in < 1
+    # disable next if > max
+    # keep dunamically updating page count
+    
+
 def infoOn():
     global curState, lastState, holdBtnState, milBtnState, startAgain, startTime, startCount, endTime, squitterRate, delta, cpuTemp, winFlag
     startAgain = True
@@ -213,6 +227,7 @@ def infoOn():
     holdBtn.drawButton(Button.State.HIDDEN)
     milBtn.drawButton(Button.State.HIDDEN)
     bigBtn.drawButton(Button.State.HIDDEN)
+    #historyBtn.drawButton(Button.State.ON)
 
     if (lastState == State.MIL_ONLY_HOLD or lastState == State.CIV_MIL_HOLD):
         plusBtn.drawButton(Button.State.HIDDEN)
@@ -228,6 +243,7 @@ def infoOff():
     holdBtn.drawButton(holdBtnState)
     milBtn.drawButton(milBtnState)
     bigBtn.drawButton(Button.State.OFF)
+    #historyBtn.drawButton(Button.State.HIDDEN)
 
     if (curState == State.CIV_MIL_HOLD or curState == State.MIL_ONLY_HOLD):
         bigBtn.drawButton(Button.State.DISABLED)
@@ -245,6 +261,10 @@ def infoOff():
         dsp.drawRecentsPane()
         dsp.displayCivRecents(civRecents, currentCallsign)
         dsp.displayMilRecents(milRecents, currentCallsign)
+
+def addItemToUniqueList(item, list):
+    list.append(item) if item not in list else None
+
 
 def addToRecents(callsign, que):
     try:
@@ -270,9 +290,9 @@ adsbObj = Adsb()
 radar = Radar(dsp.lcd)
 
 civRecents = collections.deque(maxlen=10)
-civList = set()
+civList = []
 milRecents = collections.deque(maxlen=10)
-milList = set()
+milList = []
 holdMode = False
 milMode = False
 currentID = ''
@@ -296,6 +316,7 @@ cpuTemp = ''
 medRed = (80,0,0)
 medPurple = (80,0,80)
 medBlue = (0,0,80)
+green = (0,110,0)
 gray = (128,128,128)
 darkGreen=(0,32,0)
 dataColor=(40,40,0)
@@ -327,6 +348,9 @@ plusBtn = Button(dsp.lcd, 545, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, 
 buttonList.append(plusBtn)
 minusBtn = Button(dsp.lcd, 605, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "-", zoomBtnIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 buttonList.append(minusBtn)
+#historyBtn = Button(dsp.lcd, 5, 40, 100, 50, dsp.btnFont, green, white, "LIST", historyOn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+#buttonList.append(historyBtn)
+
 
 pygame.display.update()
 
@@ -351,11 +375,11 @@ while True:
             if (Util.isMilCallsign(currentCallsign)):
                 isMilCallsign = True
                 milRecents = addToRecents(currentCallsign, milRecents)
-                milList.add((currentID, currentCallsign))
+                addItemToUniqueList((currentID, currentCallsign), civList)
             else:
                 isMilCallsign = False
                 civRecents = addToRecents(currentCallsign, civRecents)
-                civList.add((currentID, currentCallsign))
+                addItemToUniqueList((currentID, currentCallsign), milList)
         else:
             hasCallsign = False
             isMilCallsign = False
@@ -410,7 +434,7 @@ while True:
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
             # Here, last seen is the time for this held airplane.  Will age as airplane flies out of range.
 
-        if (curState != State.INFO and currentCallsign != ""):
+        if ((curState != State.INFO and curState != State.INFO_LIST) and currentCallsign != ""):
             if (curState == State.CIV_MIL_BIG or curState == State.MIL_ONLY_BIG):
                 dsp.displayLastSeenBig((lastSeenDateTime))
             else:
