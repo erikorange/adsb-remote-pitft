@@ -54,7 +54,7 @@ class Display():
         self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 38) # distance and bearing
         self.__recentHeaderFont = self.__defineFont(self.__winFlag, sansFont, 30) # headers for civ and mil recents
         self.__recentFont       = self.__defineFont(self.__winFlag, sansFont, 25) # civ and mil recents
-        self.__infoFont         = self.__defineFont(self.__winFlag, sansFont, 45) # info page
+        self.__infoFont         = self.__defineFont(self.__winFlag, sansFont, 35) # info page
         self.btnFont            = self.__defineFont(self.__winFlag, sansFont, 30) # buttons
         self.btnRadarFont       = self.__defineFont(self.__winFlag, monoFont, 50) # radar +/- buttons
 
@@ -106,35 +106,36 @@ class Display():
         pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
 
     def drawInfoPane(self):
-        labels = [("civilian:", 10), ("military:", 70), ("squitters:", 130), ("squitters/sec:", 190), ("cpu temp:", 250)]
+        labels = [("civilian:", 20), ("military:", 60), ("squitters:", 100), ("data/sec:", 140), ("cpu temp:", 180)]
 
         for l in labels:
             txt = self.__infoFont.render(l[0], 1, self.__mediumBlue)
             txtRect = txt.get_rect()
-            txtRect.right = 270
+            txtRect.right = 155
             txtRect.y = l[1]
             self.__lcd.blit(txt, txtRect)
 
         self.refreshDisplay()
 
     def updateInfoPane(self, civCount, milCount, squitterCount, squitterRate, cpuTemp):
-        pygame.draw.rect(self.__lcd, self.__black, (270,0,self.__screenWidth-270,427))
-        x = 290
+        x = 160
+        pygame.draw.rect(self.__lcd, self.__black, (x-1,20,self.__screenWidth-600,200))
+        
         civCnt = "{:,}".format(civCount)
         milCnt = "{:,}".format(milCount)
         sqCnt = "{:,}".format(squitterCount)
         #uptime = Util.getUptime()
 
         txt = self.__infoFont.render(civCnt, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 10))
+        self.__lcd.blit(txt, (x, 20))
         txt = self.__infoFont.render(milCnt, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 70))
+        self.__lcd.blit(txt, (x, 60))
         txt = self.__infoFont.render(sqCnt, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 130))
+        self.__lcd.blit(txt, (x, 100))
         txt = self.__infoFont.render(str(squitterRate), 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 190))
+        self.__lcd.blit(txt, (x, 140))
         txt = self.__infoFont.render(cpuTemp, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 250))
+        self.__lcd.blit(txt, (x, 180))
         #txt = self.__infoFont.render(uptime, 1, self.__easyWhite)
         #self.__lcd.blit(txt, (x, 310))
 
