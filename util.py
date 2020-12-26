@@ -7,6 +7,34 @@ import platform
 class Util:
 
     @staticmethod
+    def calcPageRange(n, pageSize):
+        endIdx = n*pageSize - 1
+        bgnIdx = endIdx - (pageSize - 1)
+        return(bgnIdx, endIdx)
+
+    @staticmethod
+    def getPage(pageNum, pageSize, theList):
+        pageRange = Util.calcPageRange(pageNum, pageSize)
+
+        rBegin = pageRange[0]
+        rEnd = pageRange[1]
+        listlen = len(theList)
+
+        if (rBegin > listlen - 1):
+            return None
+
+        if (rEnd <= listlen - 1):
+           endIdx = rEnd + 1
+        else:
+           endIdx = listlen
+
+        result=[]
+        for x in range(rBegin, endIdx):
+            result.append(theList[x])
+
+        return result
+
+    @staticmethod
     def isWindows():
         if (platform.system() == 'Windows'):
             return True
@@ -52,7 +80,7 @@ class Util:
     @staticmethod
     def isMilCallsign(cs):
     # starts with at least 4 letters, then at least 2 numbers; or starts with RCH or TOPCAT; or is GOTOFMS.  Remove spaces for VADER xx
-        match = re.search(r'(^(?!TEST)(?!RPPA)[A-Z]{4,}[0-9]{2,}$)|(^RCH)|(^TOPCAT)|(GOTOFMS)', cs.replace(' ',''))
+        match = re.search(r'(^(?!TEST)(?!RPPA)(?!RRPA)[A-Z]{4,}[0-9]{2,}$)|(^RCH)|(^TOPCAT)|(GOTOFMS)', cs.replace(' ',''))
         if match:
             return 1
         else:
