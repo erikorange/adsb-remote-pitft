@@ -13,13 +13,16 @@ class Radar():
         self.__degrees = []
         self.__SCALEMIN = 5
         self.__SCALEMAX = 150
-        self.__radarX = 600
-        self.__radarY = 195
-        self.__radarRadius = 165
+        self.__radarX = 595
+        self.__radarY = 200
+        self.__radarRadius = 150
         self.__radarMaxDist = 50
+        self.__degreeOffset = 30
+        self.__shortTicLen = 3
+        self.__longTicLen = 9
         self.__posList = []
         self.__radarColor = (0,80,0)
-        self.__green = (0,255,0)
+        self.__green = (0,215,0)
         self.__black = (0,0,0)
         self.__darkOrange = (128,60,0)
         self.__red = (255,0,0)
@@ -28,13 +31,22 @@ class Radar():
         if (self.__winFlag):
             sansFont = "microsoftsansserif"
             monoFont = "couriernew"
+            self.__radarBackColor = (0,20,0)
+            self.__degreeFont = self.__defineFont(self.__winFlag, sansFont, 15) # numeric degrees
+            self.__radarRadius = 150
+            self.__degreeOffset = 30
+            self.__distanceTxtOffset = 19
         else:
             sansFont = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
             monoFont = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"
+            self.__radarBackColor = (0,5,0)
+            self.__degreeFont = self.__defineFont(self.__winFlag, sansFont, 16) # numeric degrees
+            self.__radarRadius = 154
+            self.__degreeOffset = 33
+            self.__distanceTxtOffset = 22
 
         self.__radarFont  = self.__defineFont(self.__winFlag, sansFont, 20) # NSEW letters
         self.__rangeFont  = self.__defineFont(self.__winFlag, sansFont, 20) # radar "out of range"
-        self.__degreeFont = self.__defineFont(self.__winFlag, sansFont, 12) # numeric degrees
 
         #crosshatches
         chAngle=0
@@ -49,31 +61,26 @@ class Radar():
             f=f+0.25
 
         # tic marks
-        for a in range(0, 360, 10):
+        for a in range(0, 360, 5):
             if a % 10 == 0:
-                ticLen = 6
+                ticLen = self.__longTicLen
             else:
-                ticLen = 3
+                ticLen = self.__shortTicLen
 
-            self.__ticMarks.append([self.__circleXY(self.__radarX, self.__radarY, a, self.__radarRadius), self.__circleXY(self.__radarX, self.__radarY, a, self.__radarRadius-ticLen)])
+            offset = 2
+            self.__ticMarks.append([self.__circleXY(self.__radarX, self.__radarY, a, self.__radarRadius+offset), self.__circleXY(self.__radarX, self.__radarY, a, self.__radarRadius+offset+ticLen)])
 
         # numeric degrees 
         for a in range(0, 360, 10):
-            if (a == 0):
-                degTxt = "  0"
-            else:
-                degTxt = str(a)
-
-            text = self.__degreeFont.render(degTxt, 1, self.__green)
-            text = pygame.transform.rotate(text, 360-a)
-            r = self.__radarRadius + 13
+            text = self.__degreeFont.render("{:03d}".format(a), 1, self.__green)
+            r = self.__radarRadius + self.__degreeOffset
             blipX = r*math.cos(math.radians(a))
             blipY = r*math.sin(math.radians(a))
             #transform the coordinates from Unit Circle to Mathematics Circle
             plotX=blipY
             plotY=-blipX
-            self.__degrees.append((text, self.__radarX+int(plotX)-11, self.__radarY+int(plotY)-9))
-
+            txtRect = text.get_rect(center=(self.__radarX+plotX, self.__radarY+plotY))
+            self.__degrees.append((text,txtRect))
 
     def __defineFont(self, winflag, fontFamily, size):
         if (Util.isWindows()):
@@ -89,6 +96,7 @@ class Radar():
 
     def drawRadarScreen(self):
         #draw radar circle
+        pygame.draw.circle(self.__lcd, self.__radarBackColor, (self.__radarX, self.__radarY), self.__radarRadius, 0)
         pygame.draw.circle(self.__lcd, self.__radarColor, (self.__radarX, self.__radarY), self.__radarRadius, 1)
  
         #crosshatches
@@ -101,47 +109,19 @@ class Radar():
 
         # ticmarks
         for a in range(0, len(self.__ticMarks)):
-            pygame.draw.line(self.__lcd, self.__radarColor, self.__ticMarks[a][0], self.__ticMarks[a][1])
+            pygame.draw.line(self.__lcd, self.__green, self.__ticMarks[a][0], self.__ticMarks[a][1])
 
-        # degrees
         for a in range(0, len(self.__degrees)):
-            self.__lcd.blit(self.__degrees[a][0], (self.__degrees[a][1], self.__degrees[a][2]))
-
-            
-        textOffset = 13
-        # compass directions
-        #txt = self.__radarFont.render("N", 1, self.__green)
-        #txtCenterX = self.__radarX
-        #txtCenterY = self.__radarY - self.__radarRadius - textOffset
-        #txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        #self.__lcd.blit(txt, txtRect)
-#
-        #txt = self.__radarFont.render("S", 1, self.__green)
-        #txtCenterX = self.__radarX
-        #txtCenterY = self.__radarY + self.__radarRadius + textOffset
-        #txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        #self.__lcd.blit(txt, txtRect)
-#
-        #txt = self.__radarFont.render("W", 1, self.__green)
-        #txtCenterX = self.__radarX - self.__radarRadius - textOffset
-        #txtCenterY = self.__radarY
-        #txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        #self.__lcd.blit(txt, txtRect)
-#
-        #txt = self.__radarFont.render("E", 1, self.__green)
-        #txtCenterX = self.__radarX + self.__radarRadius + textOffset
-        #txtCenterY = self.__radarY
-        #txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        #self.__lcd.blit(txt, txtRect)
+            self.__lcd.blit(self.__degrees[a][0], self.__degrees[a][1])
 
         # radar distance
-        pygame.draw.line(self.__lcd, self.__radarColor, (self.__radarX - self.__radarRadius, self.__radarY + self.__radarRadius + (textOffset*3)), (self.__radarX + self.__radarRadius,  self.__radarY + self.__radarRadius + (textOffset*3)), width=1)
-        pygame.draw.line(self.__lcd, self.__radarColor, (self.__radarX - self.__radarRadius, self.__radarY + self.__radarRadius + (textOffset*3)-10), (self.__radarX - self.__radarRadius,  self.__radarY + self.__radarRadius + (textOffset*3)+10), width=1)
-        pygame.draw.line(self.__lcd, self.__radarColor, (self.__radarX + self.__radarRadius, self.__radarY + self.__radarRadius + (textOffset*3)-10), (self.__radarX + self.__radarRadius,  self.__radarY + self.__radarRadius + (textOffset*3)+10), width=1)
+        pygame.draw.line(self.__lcd, self.__radarColor, (self.__radarX - self.__radarRadius, self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)), (self.__radarX + self.__radarRadius,  self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)), width=1)
+        pygame.draw.line(self.__lcd, self.__radarColor, (self.__radarX - self.__radarRadius, self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)-10), (self.__radarX - self.__radarRadius,  self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)+10), width=1)
+        pygame.draw.line(self.__lcd, self.__radarColor, (self.__radarX + self.__radarRadius, self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)-10), (self.__radarX + self.__radarRadius,  self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)+10), width=1)
 
         txt = self.__radarFont.render(" " + str(self.__radarMaxDist*2) + " mi ", 1, self.__green, self.__black)
         txtCenterX = self.__radarX
-        txtCenterY = self.__radarY + self.__radarRadius + (textOffset*3)
+        txtCenterY = self.__radarY + self.__radarRadius + (self.__distanceTxtOffset*3)
         txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
         self.__lcd.blit(txt, txtRect)
 
@@ -175,7 +155,7 @@ class Radar():
         return(int(x),int(y))
 
     def clearRadar(self):
-        pygame.draw.rect(self.__lcd, self.__black, (400,0,400,416))
+        pygame.draw.rect(self.__lcd, self.__black, (395,0,405,431))
 
     def plotCurrentPos(self, blipDistance, blipAngle):
         if ((blipDistance != self.__oldBlipDistance) | (blipAngle != self.__oldBlipAngle)):
@@ -210,9 +190,9 @@ class Radar():
 
     def __drawOutOfRange(self, tooFarAway):
         if (tooFarAway):
-            pygame.draw.rect(self.__lcd, self.__black, (675,5,125,25))
-            txt = self.__rangeFont.render("Out of Range", 1, self.__red)
-            self.__lcd.blit(txt, (675, 5))
+            pygame.draw.rect(self.__lcd, self.__black, (690,1,110,25))
+            txt = self.__rangeFont.render("out of range", 1, self.__red)
+            self.__lcd.blit(txt, (691, 1))
 
         else:
-            pygame.draw.rect(self.__lcd, self.__black, (675,5,125,25))
+            pygame.draw.rect(self.__lcd, self.__black, (690,1,110,25))
