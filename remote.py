@@ -22,8 +22,6 @@ class State(enum.Enum):
     MIL_ONLY_HOLD = 5
     MIL_ONLY_BIG = 6
     INFO = 7
-    INFO_LIST = 8
-
 
 def shutdownEvent(signal, frame):
     sys.exit(0)
@@ -189,18 +187,6 @@ def bigOff():
 
     return
 
-def historyOn():
-    global curState
-    curState = State.INFO_LIST
-    dsp.clearDisplayArea()
-
-    # add next/prev buttons
-    # get num pages
-    # display page, turn on next/prev buttons
-    # disable prev in < 1
-    # disable next if > max
-    # keep dunamically updating page count
-    
 
 def infoOn():
     global curState, lastState, holdBtnState, milBtnState, startAgain, startTime, startCount, endTime, squitterRate, delta, cpuTemp, winFlag
@@ -331,22 +317,22 @@ dsp.drawRecentsPane()
 dsp.drawDataLEDs()
 
 buttonList = []
-holdBtn = Button(dsp.lcd, 5, 429, 100, 50, dsp.btnFont, medPurple, gray, "HOLD", holdBtnOn, holdBtnOff, Button.State.OFF, Button.Type.STICKY)
+holdBtn = Button(dsp.lcd, 5, 438, 100, 40, dsp.btnFont, medPurple, gray, "HOLD", holdBtnOn, holdBtnOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(holdBtn)
-milBtn = Button(dsp.lcd, 120, 429, 100, 50, dsp.btnFont, darkGreen, gray, "MIL", milBtnOn, milBtnOff, Button.State.OFF, Button.Type.STICKY)
+milBtn = Button(dsp.lcd, 115, 438, 100, 40, dsp.btnFont, darkGreen, gray, "MIL", milBtnOn, milBtnOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(milBtn)
-infoBtn = Button(dsp.lcd, 235, 429, 100, 50, dsp.btnFont, medBlue, gray, "INFO", infoOn, infoOff, Button.State.OFF, Button.Type.STICKY)
+infoBtn = Button(dsp.lcd, 225, 438, 100, 40, dsp.btnFont, medBlue, gray, "INFO", infoOn, infoOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(infoBtn)
-bigBtn = Button(dsp.lcd, 350, 429, 100, 50, dsp.btnFont, dataColor, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
+bigBtn = Button(dsp.lcd, 335, 438, 100, 40, dsp.btnFont, dataColor, gray, "BIG", bigOn, bigOff, Button.State.OFF, Button.Type.STICKY)
 buttonList.append(bigBtn)
-exitBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "EXIT", exitSystem, None, Button.State.OFF, Button.Type.MOMENTARY)
+exitBtn = Button(dsp.lcd, 695, 438, 100, 40, dsp.btnFont, medRed, gray, "EXIT", exitSystem, None, Button.State.OFF, Button.Type.MOMENTARY)
 buttonList.append(exitBtn)
 #offBtn = Button(dsp.lcd, 695, 429, 100, 50, dsp.btnFont, medRed, gray, "OFF", powerOff, None, Button.State.OFF, Button.Type.MOMENTARY)
 #buttonList.append(offBtn)
 
-plusBtn = Button(dsp.lcd, 545, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "+", zoomBtnOut, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+plusBtn = Button(dsp.lcd, 545, 438, 40, 40, dsp.btnRadarFont, darkGreen, white, "+", zoomBtnOut, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 buttonList.append(plusBtn)
-minusBtn = Button(dsp.lcd, 605, 429, 50, 50, dsp.btnRadarFont, darkGreen, white, "-", zoomBtnIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
+minusBtn = Button(dsp.lcd, 605, 438, 40, 40, dsp.btnRadarFont, darkGreen, white, "-", zoomBtnIn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 buttonList.append(minusBtn)
 #historyBtn = Button(dsp.lcd, 5, 40, 100, 50, dsp.btnFont, green, white, "LIST", historyOn, None, Button.State.HIDDEN, Button.Type.MOMENTARY)
 #buttonList.append(historyBtn)
@@ -375,11 +361,11 @@ while True:
             if (Util.isMilCallsign(currentCallsign)):
                 isMilCallsign = True
                 milRecents = addToRecents(currentCallsign, milRecents)
-                addItemToUniqueList((currentID, currentCallsign), civList)
+                addItemToUniqueList((currentID, currentCallsign), milList)
             else:
                 isMilCallsign = False
                 civRecents = addToRecents(currentCallsign, civRecents)
-                addItemToUniqueList((currentID, currentCallsign), milList)
+                addItemToUniqueList((currentID, currentCallsign), civList)
         else:
             hasCallsign = False
             isMilCallsign = False
@@ -434,7 +420,7 @@ while True:
             lastSeenDateTime = (adsbObj.theDate, adsbObj.theTime)
             # Here, last seen is the time for this held airplane.  Will age as airplane flies out of range.
 
-        if ((curState != State.INFO and curState != State.INFO_LIST) and currentCallsign != ""):
+        if (curState != State.INFO  and currentCallsign != ""):
             if (curState == State.CIV_MIL_BIG or curState == State.MIL_ONLY_BIG):
                 dsp.displayLastSeenBig((lastSeenDateTime))
             else:
