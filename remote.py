@@ -200,9 +200,9 @@ def infoOn():
     if (winFlag):
         cpuTemp = "n/a"
     else:
-        temps = Util.getCPUTemp()
+        temp = Util.getCPUTemp()
         deg = u'\N{DEGREE SIGN}'
-        cpuTemp = f'{temps[0]}{deg}C    {temps[1]}{deg}F'
+        cpuTemp = f'{temp}{deg}C'
 
     dsp.clearDisplayArea()
     lastState = curState
