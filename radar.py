@@ -18,20 +18,20 @@ class Radar():
         self.__radarRadius = 150
         self.__radarMaxDist = 50
         self.__degreeOffset = 30
-        self.__shortTicLen = 3
-        self.__longTicLen = 9
+        self.__shortTicLen = 2
+        self.__longTicLen = 12
         self.__posList = []
         self.__radarColor = (0,80,0)
+        self.__radarDegColor = (0,200,0)
         self.__green = (0,215,0)
         self.__black = (0,0,0)
-        self.__darkOrange = (128,60,0)
+        self.__trailingPosColor = (255,0,255)
         self.__red = (255,0,0)
         self.__winFlag = Util.isWindows()
 
         if (self.__winFlag):
             sansFont = "microsoftsansserif"
             monoFont = "couriernew"
-            self.__radarBackColor = (0,20,0)
             self.__degreeFont = self.__defineFont(self.__winFlag, sansFont, 15) # numeric degrees
             self.__radarRadius = 150
             self.__degreeOffset = 30
@@ -39,7 +39,6 @@ class Radar():
         else:
             sansFont = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
             monoFont = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"
-            self.__radarBackColor = (0,5,0)
             self.__degreeFont = self.__defineFont(self.__winFlag, sansFont, 16) # numeric degrees
             self.__radarRadius = 154
             self.__degreeOffset = 33
@@ -72,7 +71,7 @@ class Radar():
 
         # numeric degrees 
         for a in range(0, 360, 10):
-            text = self.__degreeFont.render("{:03d}".format(a), 1, self.__green)
+            text = self.__degreeFont.render("{:03d}".format(a), 1, self.__radarDegColor)
             r = self.__radarRadius + self.__degreeOffset
             blipX = r*math.cos(math.radians(a))
             blipY = r*math.sin(math.radians(a))
@@ -96,7 +95,6 @@ class Radar():
 
     def drawRadarScreen(self):
         #draw radar circle
-        pygame.draw.circle(self.__lcd, self.__radarBackColor, (self.__radarX, self.__radarY), self.__radarRadius, 0)
         pygame.draw.circle(self.__lcd, self.__radarColor, (self.__radarX, self.__radarY), self.__radarRadius, 1)
  
         #crosshatches
@@ -109,7 +107,7 @@ class Radar():
 
         # ticmarks
         for a in range(0, len(self.__ticMarks)):
-            pygame.draw.line(self.__lcd, self.__green, self.__ticMarks[a][0], self.__ticMarks[a][1])
+            pygame.draw.line(self.__lcd, self.__radarColor, self.__ticMarks[a][0], self.__ticMarks[a][1])
 
         for a in range(0, len(self.__degrees)):
             self.__lcd.blit(self.__degrees[a][0], self.__degrees[a][1])
@@ -179,7 +177,7 @@ class Radar():
 
             #overwrite the old blip, if there is one
             if ((self.__oldPlotX != 0) & (self.__oldPlotY != 0)):
-                pygame.draw.circle(self.__lcd, self.__darkOrange, (self.__radarX+int(self.__oldPlotX),self.__radarY+int(self.__oldPlotY)), 2)
+                pygame.draw.circle(self.__lcd, self.__trailingPosColor, (self.__radarX+int(self.__oldPlotX),self.__radarY+int(self.__oldPlotY)), 2)
                 
             #plot the blip
             pygame.draw.circle(self.__lcd, self.__green, (self.__radarX+int(plotX),self.__radarY+int(plotY)), 2)
