@@ -106,7 +106,7 @@ class Display():
         pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
 
     def drawInfoPane(self):
-        labels = [("civilian:", 20), ("military:", 60), ("squitters:", 100), ("data/sec:", 140), ("cpu temp:", 180)]
+        labels = [("civilian:", 20), ("military:", 65), ("squitters:", 110), ("data/sec:", 155), ("cpu temp:", 200)]
 
         for l in labels:
             txt = self.__infoFont.render(l[0], 1, self.__mediumBlue)
@@ -119,7 +119,7 @@ class Display():
 
     def updateInfoPane(self, civCount, milCount, squitterCount, squitterRate, cpuTemp):
         x = 160
-        pygame.draw.rect(self.__lcd, self.__black, (x-1,20,self.__screenWidth-600,200))
+        pygame.draw.rect(self.__lcd, self.__black, (x-1,20,self.__screenWidth-650,220))
         
         civCnt = "{:,}".format(civCount)
         milCnt = "{:,}".format(milCount)
@@ -129,13 +129,13 @@ class Display():
         txt = self.__infoFont.render(civCnt, 1, self.__easyWhite)
         self.__lcd.blit(txt, (x, 20))
         txt = self.__infoFont.render(milCnt, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 60))
+        self.__lcd.blit(txt, (x, 65))
         txt = self.__infoFont.render(sqCnt, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 100))
+        self.__lcd.blit(txt, (x, 110))
         txt = self.__infoFont.render(str(squitterRate), 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 140))
+        self.__lcd.blit(txt, (x, 155))
         txt = self.__infoFont.render(cpuTemp, 1, self.__easyWhite)
-        self.__lcd.blit(txt, (x, 180))
+        self.__lcd.blit(txt, (x, 200))
         #txt = self.__infoFont.render(uptime, 1, self.__easyWhite)
         #self.__lcd.blit(txt, (x, 310))
 
