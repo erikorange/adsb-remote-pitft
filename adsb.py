@@ -1,13 +1,34 @@
 class Adsb():
 
     def __init__(self):
-        self.clearLastCallsignID()
+        self.clearLastCallsignAndID()
         self.clearLastFlightData()
 
-    def clearLastCallsignID(self):
-        self.lastCallSign = ""
-        self.lastID = ""
+    def clearLastCallsignAndID(self):
+        self.__lastCallsign = None
+        self.__lastID = None
 
+    def setLastCallsignAndID(self, callsign, id):
+        self.__lastCallsign = callsign
+        self.__lastID = id
+
+    @property
+    def lastID(self):
+        return self.__lastID
+
+    @lastID.setter
+    def lastID(self, id):
+        self.__lastID = id
+
+    @property
+    def lastCallsign(self):
+        return self.__lastCallsign
+	
+    @lastCallsign.setter
+    def lastCallsign(self, callsign):
+        self.__lastCallsign = callsign
+
+    
     def clearLastFlightData(self):
         self.lastDist = None
         self.lastBearing = ""

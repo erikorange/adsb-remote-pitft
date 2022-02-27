@@ -1,20 +1,22 @@
 import os
 import pygame
 from pygame.locals import *
-import math
+import datetime
 from util import Util
+
 
 class Display():
         
-    def __init__(self):
+    def __init__(self, winFlag):
+        self.__winFlag = winFlag
+
         self.__screenWidth = 800
         self.__screenHeight = 480
-
-        self.__radarLineAngle=0
-        self.__radarBlipGamma=255
-        self.__compassPoints=[]
-        self.__crosshatchLines=[]
-        self.__concentricRadii=[]
+        
+        self.__dataFlipLEDs = False
+        self.__dataLED1x = 10
+        self.__dataLED2x = 23
+        self.__dataLEDy = 10
 
         self.__initDisplay()
         self.__initFonts()
@@ -22,43 +24,120 @@ class Display():
     
     def __initDisplay(self):
         pygame.init()
-        pygame.mouse.set_visible(False)
-        flags = FULLSCREEN | DOUBLEBUF | HWSURFACE
-        self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
-        self.lcd = self.__lcd
+
+        if (self.__winFlag):
+            self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight))
+        else:
+            pygame.mouse.set_visible(False)
+            flags = pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE
+            self.__lcd = pygame.display.set_mode((self.__screenWidth, self.__screenHeight), flags)
+
+    @property
+    def lcd(self):
+        return self.__lcd
 
     def __initFonts(self):
-        fontDir="/usr/share/fonts/truetype/freefont/"
-        self.__idFont = pygame.font.Font(fontDir + "FreeMono.ttf", 40) # ICAO ID
-        self.__csFont = pygame.font.Font(fontDir + "FreeSans.ttf", 52) # callsign
-        self.__fltFont = pygame.font.Font(fontDir + "FreeMono.ttf", 35) # flight data
-        self.__lastSeenFont = pygame.font.Font(fontDir + "FreeSans.ttf", 25) # time last seen
-        self.__distFont = pygame.font.Font(fontDir + "FreeSans.ttf", 40) # distance and bearing
-        self.__btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 13)
-        self.__recentFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
-        self.__statsFont= pygame.font.Font(fontDir + "FreeSans.ttf", 25)
-        self.__optsFont = pygame.font.Font(fontDir + "FreeSans.ttf", 17)
-        self.__titleFont= pygame.font.Font(fontDir + "FreeSans.ttf", 18)
-        self.__radarFont = pygame.font.Font(fontDir + "FreeSans.ttf", 20)
-        self.__recentHeaderFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
-        self.btnFont = pygame.font.Font(fontDir + "FreeSans.ttf", 30)
+        if (self.__winFlag):
+            sansFont = "microsoftsansserif"
+            monoFont = "couriernew"
+        else:
+            sansFont = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
+            monoFont = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"
+
+        self.__idFont           = self.__defineFont(self.__winFlag, monoFont, 40) # ICAO ID
+        self.__idFontBig        = self.__defineFont(self.__winFlag, monoFont, 130) # ICAO ID
+        self.__csFont           = self.__defineFont(self.__winFlag, sansFont, 52) # callsign
+        self.__csFontBig        = self.__defineFont(self.__winFlag, sansFont, 155) # callsign
+        self.__fltFont          = self.__defineFont(self.__winFlag, monoFont, 35) # flight data
+        self.__lastSeenFont     = self.__defineFont(self.__winFlag, sansFont, 25) # time last seen
+        self.__lastSeenFontBig  = self.__defineFont(self.__winFlag, sansFont, 50) # time last seen
+        self.__distFont         = self.__defineFont(self.__winFlag, sansFont, 37) # distance and bearing
+        self.__recentHeaderFont = self.__defineFont(self.__winFlag, sansFont, 30) # headers for civ and mil recents
+        self.__recentFont       = self.__defineFont(self.__winFlag, sansFont, 25) # civ and mil recents
+        self.__infoFont         = self.__defineFont(self.__winFlag, sansFont, 35) # info page
+        self.btnFont            = self.__defineFont(self.__winFlag, sansFont, 30) # buttons
+        self.btnRadarFont       = self.__defineFont(self.__winFlag, monoFont, 50) # radar +/- buttons
+
+    def __defineFont(self, winflag, fontFamily, size):
+        if (self.__winFlag):
+            return pygame.font.SysFont(fontFamily, size)
+        else:
+            return pygame.font.Font(fontFamily, size)
 
     def __initColors(self):
-        self.__green = (0,255,0)
-        self.__black = (0,0,0)
-        self.__yellow = (255,255,0)
-        self.__mediumBlue = (100,149,237)
-        self.__cyan = (0,128,128)
-        self.__darkRed = (64,0,0)
-        self.__medRed = (128,0,0)
-        self.__darkPurple=(64,0,64)
-        self.__medPurple=(128,0,128)
-        self.__medOrange=(255,120,0)
-        self.__darkOrange=(128,60,0)
-        self.__white = (255,255,255)
-        self.__gray = (128,128,128)
-        self.__red = (255,0,0)
-        self.__blue = (0,0,255)
+        self.__black        = (0,0,0)
+        self.__red          = (255,0,0)
+        self.__medRed       = (128,0,0)
+        self.__darkRed      = (64,0,0)
+        self.__medOrange    = (255,120,0)
+        self.__darkOrange   = (128,60,0)
+        self.__yellow       = (255,255,0)
+        self.__medYellow    = (128,128,0)
+        self.__green        = (0,255,0)
+        self.__medGreen     = (0,128,0)
+        self.__blue         = (0,0,255)
+        self.__mediumBlue   = (100,149,237)
+        self.__cyan         = (0,128,128)
+        self.__medPurple    = (128,0,128)
+        self.__darkPurple   = (64,0,64)
+        self.__white        = (255,255,255)
+        self.__easyWhite    = (200,200,200)
+        self.__gray         = (128,128,128)
+        
+    def drawDataLEDs(self):
+        pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED1x,self.__dataLEDy), 5, 0)
+        pygame.draw.circle(self.__lcd, self.__medRed, (self.__dataLED2x,self.__dataLEDy), 5, 0)
+
+    def flipDataLEDs(self):
+        if (self.__dataFlipLEDs):
+            LED1 = self.__medGreen
+            LED2 = self.__medRed
+        else:
+            LED1 = self.__medRed
+            LED2 = self.__medGreen
+
+        pygame.draw.circle(self.__lcd, LED1, (self.__dataLED1x,self.__dataLEDy), 5, 0)
+        pygame.draw.circle(self.__lcd, LED2, (self.__dataLED2x,self.__dataLEDy), 5, 0)
+        
+        self.__dataFlipLEDs = not self.__dataFlipLEDs
+        return
+
+    def clearDisplayArea(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth,427))
+
+    def drawInfoPane(self):
+        labels = [("civilian:", 20), ("military:", 65), ("squitters:", 110), ("data/sec:", 155), ("cpu temp:", 200)]
+
+        for l in labels:
+            txt = self.__infoFont.render(l[0], 1, self.__mediumBlue)
+            txtRect = txt.get_rect()
+            txtRect.right = 155
+            txtRect.y = l[1]
+            self.__lcd.blit(txt, txtRect)
+
+        self.refreshDisplay()
+
+    def updateInfoPane(self, civCount, milCount, squitterCount, squitterRate, cpuTemp):
+        x = 160
+        pygame.draw.rect(self.__lcd, self.__black, (x-1,20,self.__screenWidth-650,220))
+        
+        civCnt = "{:,}".format(civCount)
+        milCnt = "{:,}".format(milCount)
+        sqCnt = "{:,}".format(squitterCount)
+        #uptime = Util.getUptime()
+
+        txt = self.__infoFont.render(civCnt, 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 20))
+        txt = self.__infoFont.render(milCnt, 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 65))
+        txt = self.__infoFont.render(sqCnt, 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 110))
+        txt = self.__infoFont.render(str(squitterRate), 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 155))
+        txt = self.__infoFont.render(cpuTemp, 1, self.__easyWhite)
+        self.__lcd.blit(txt, (x, 200))
+        #txt = self.__infoFont.render(uptime, 1, self.__easyWhite)
+        #self.__lcd.blit(txt, (x, 310))
 
     def drawRecentsPane(self):
         ctrX = self.__screenWidth/2 + self.__screenWidth/4
@@ -101,7 +180,7 @@ class Display():
             txt = self.__recentFont.render(cs[:8], 1, foreColor, backColor)
             self.__lcd.blit(txt, (xpos, ypos))
             ypos += 32
-    
+
     def displayMilRecents(self, recentCs, currentCs):
         xpos = 641
         yAnchor = 75
@@ -139,7 +218,15 @@ class Display():
         self.__lcd.blit(txt, (xpos, 0))
 
     def clearICAOid(self):
-        pygame.draw.rect(self.__lcd, self.__black, (0,0,self.__screenWidth/2,39))
+        pygame.draw.rect(self.__lcd, self.__black, (40,0,self.__screenWidth/2-40,39))
+
+    def displayICAOidBig(self, id):
+        txt = self.__idFontBig.render(id, 1, self.__yellow)
+        xpos = (self.__screenWidth - txt.get_width())/2
+        self.__lcd.blit(txt, (xpos, 20))
+
+    def clearICAOidBig(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,40,self.__screenWidth,100))
 
     def displayCallsign(self, cs, isMil):
         txt = self.__csFont.render(cs, 1, self.__yellow)
@@ -152,18 +239,82 @@ class Display():
     def clearCallsign(self):
         pygame.draw.rect(self.__lcd, self.__black, (0,43,self.__screenWidth/2,55))
 
-    def displayLastSeen(self, adsbObj):
-        self.clearLastSeen()
-        dateParts = adsbObj.theDate.split("/")
+    def displayCallsignBig(self, cs, isMil):
+        txt = self.__csFontBig.render(cs, 1, self.__yellow)
+        xpos = (self.__screenWidth - txt.get_width())/2
+        if (isMil):
+            pygame.draw.rect(self.__lcd, self.__medRed, (0,160,self.__screenWidth,150))
+        
+        self.__lcd.blit(txt, (xpos, 148))
+
+    def clearCallsignBig(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,160,self.__screenWidth,150))
+
+    def displayLastSeen(self, lastSeen):
+        # check if lastSeen hasn't been populated yet upon startup
+        if (not lastSeen):
+            return
+
+        dateParts = lastSeen[0].split("/")
         formattedDate = dateParts[1] + "-" + dateParts[2] + "-" + dateParts[0]
-        formattedTime = adsbObj.theTime.split(".")[0]
-        txt = self.__lastSeenFont.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, self.__cyan)
+        formattedTime = lastSeen[1].split(".")[0]
+
+        cur_dt = datetime.datetime.now()
+        try:
+            lst_dt = datetime.datetime.strptime(lastSeen[0] + " " + lastSeen[1], "%Y/%m/%d %H:%M:%S.%f")
+            delta = abs((cur_dt - lst_dt).total_seconds())
+        except ValueError:
+            delta = 0
+
+        if (delta > 180.0):                   # older than 3 minutes
+            lsColor = self.__red
+            
+        elif (delta > 60.0):                   # older than 1 minute
+            lsColor = self.__medYellow
+
+        else:
+            lsColor = self.__medGreen
+    
+        self.clearLastSeen()
+        txt = self.__lastSeenFont.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, lsColor)
         xpos = ((self.__screenWidth/2) - txt.get_width())/2
         self.__lcd.blit(txt, (xpos, 105))
 
     def clearLastSeen(self):
-        pygame.draw.rect(self.__lcd, self.__black, (0,105,self.__screenWidth/2,30))
+        pygame.draw.rect(self.__lcd, self.__black, (0,105,self.__screenWidth/2,27))
 
+    def displayLastSeenBig(self, lastSeen):
+        # check if lastSeen hasn't been populated yet upon startup
+        if (not lastSeen):
+            return
+
+        dateParts = lastSeen[0].split("/")
+        formattedDate = dateParts[1] + "-" + dateParts[2] + "-" + dateParts[0]
+        formattedTime = lastSeen[1].split(".")[0]
+
+        cur_dt = datetime.datetime.now()
+        try:
+            lst_dt = datetime.datetime.strptime(lastSeen[0] + " " + lastSeen[1], "%Y/%m/%d %H:%M:%S.%f")
+            delta = abs((cur_dt - lst_dt).total_seconds())
+        except ValueError:
+            delta = 0
+
+        if (delta > 180.0):                   # older than 3 minutes
+            lsColor = self.__red
+            
+        elif (delta > 60.0):                   # older than 1 minute
+            lsColor = self.__medYellow
+
+        else:
+            lsColor = self.__medGreen
+    
+        self.clearLastSeenBig()
+        txt = self.__lastSeenFontBig.render("Last seen:  " + formattedTime + "  " + formattedDate, 1, lsColor)
+        xpos = (self.__screenWidth - txt.get_width())/2
+        self.__lcd.blit(txt, (xpos, 340))
+
+    def clearLastSeenBig(self):
+        pygame.draw.rect(self.__lcd, self.__black, (0,340,self.__screenWidth,60))
         
     def displayFlightData(self, adsbObj, persist):
         self.clearFlightData()
@@ -208,21 +359,21 @@ class Display():
         xpos = 0
         ypos = 190
         spacer = 35
-        txt = self.__fltFont.render("Alt: " + altitude, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Alt: {altitude}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos))
-        txt = self.__fltFont.render("Lat: " + lat, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Lat: {lat}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer))
-        txt = self.__fltFont.render("Lon:" + lon, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Lon:{lon}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*2))
-        txt = self.__fltFont.render("VRt: " + verticalRate, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'VRt: {verticalRate}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*3))
-        txt = self.__fltFont.render("GSp: " + groundSpeed, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'GSp: {Util.getGndSpeedText(groundSpeed)}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*4))
-        txt = self.__fltFont.render("Sqk: " + squawk, 1, self.__mediumBlue)
+        txt = self.__fltFont.render(f'Sqk: {squawk}', 1, self.__mediumBlue)
         self.__lcd.blit(txt, (xpos, ypos+spacer*5))
 
     def clearFlightData(self):
-        pygame.draw.rect(self.__lcd, self.__black, (79,190,321,210))
+        pygame.draw.rect(self.__lcd, self.__black, (79,190,300,210))
 
     def displayDistance(self, dist, bearing):
         self.clearDistance()
@@ -232,133 +383,7 @@ class Display():
         self.__lcd.blit(txt, (xpos, 135))
 
     def clearDistance(self):
-        pygame.draw.rect(self.__lcd, self.__black, (0,135,self.__screenWidth/2,42))
-
-    def circleXY(self, cX, cY, angle, radius):
-        x = cX + radius * math.cos(math.radians(angle))
-        y = cY + radius * math.sin(math.radians(angle))
-        return(int(x),int(y))
-
-    def updateCallsignCount(self, adsbCnt,civCnt, milCnt):
-        pygame.draw.rect(self.__lcd, self.__black, (0,391,self.__screenWidth/2,31))
-        xpos = 0
-        civLab = self.__statsFont.render("civ:", 1, self.__cyan)
-        self.__lcd.blit(civLab, (xpos,393))
-        civNum = self.__statsFont.render("{:,}".format(civCnt), 1, self.__white)
-        xpos = xpos + civLab.get_width()+6
-        self.__lcd.blit(civNum, (xpos,393))
-
-        civRect = civNum.get_rect()
-        xpos = xpos + civRect.right + 60
-        milLab = self.__statsFont.render("mil:", 1, self.__cyan)
-        self.__lcd.blit(milLab, (xpos,393))
-        milNum = self.__statsFont.render("{:,}".format(milCnt), 1, self.__white)
-        xpos = xpos + milLab.get_width()+6
-        self.__lcd.blit(milNum, (xpos,393))
+        pygame.draw.rect(self.__lcd, self.__black, (0,135,self.__screenWidth/2-2,42))
 
     def refreshDisplay(self):
         pygame.display.update()
-
-    def drawRadar(self, radarX, radarY, radarRadius, maxBlipDistance):
-        self.__radarX = radarX
-        self.__radarY = radarY
-        self.__radarRadius = radarRadius
-        self.__maxBlipDistance = maxBlipDistance
-
-        #crosshatches
-        chAngle=0
-        for a in range(0, 4):
-            chAngle=a*45
-            self.__crosshatchLines.append([self.circleXY(radarX, radarY, chAngle, radarRadius), self.circleXY(radarX, radarY, chAngle+180, radarRadius)])
-        
-        #concentric circles
-        f=0.25
-        for a in range(0, 3):
-            self.__concentricRadii.append(int(radarRadius*f))
-            f=f+0.25
-
-        radarColor=(0,50,0)
-
-        #draw radar circle
-        pygame.draw.circle(self.__lcd, radarColor, (radarX,radarY), radarRadius, 1)
- 
-        #crosshatches
-        for a in range(0, len(self.__crosshatchLines)):
-            pygame.draw.line(self.__lcd, radarColor, self.__crosshatchLines[a][0], self.__crosshatchLines[a][1])
-       
-        # concentric circles
-        for a in range(0, len(self.__concentricRadii)):
-            pygame.draw.circle(self.__lcd, radarColor, (radarX,radarY), self.__concentricRadii[a], 1)
-
-        textOffset = 13
-        # compass directions
-        txt = self.__radarFont.render("N", 1, self.__green)
-        txtCenterX = radarX
-        txtCenterY = radarY - radarRadius - textOffset
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        txt = self.__radarFont.render("S", 1, self.__green)
-        txtCenterX = radarX
-        txtCenterY = radarY + radarRadius + textOffset
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        txt = self.__radarFont.render("W", 1, self.__green)
-        txtCenterX = radarX - radarRadius - textOffset
-        txtCenterY = radarY
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        txt = self.__radarFont.render("E", 1, self.__green)
-        txtCenterX = radarX + radarRadius + textOffset
-        txtCenterY = radarY
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        # radar distance
-        pygame.draw.line(self.__lcd, radarColor, (radarX - radarRadius, radarY + radarRadius + (textOffset*3)), (radarX + radarRadius,  radarY + radarRadius + (textOffset*3)), width=1)
-        pygame.draw.line(self.__lcd, radarColor, (radarX - radarRadius, radarY + radarRadius + (textOffset*3)-10), (radarX - radarRadius,  radarY + radarRadius + (textOffset*3)+10), width=1)
-        pygame.draw.line(self.__lcd, radarColor, (radarX + radarRadius, radarY + radarRadius + (textOffset*3)-10), (radarX + radarRadius,  radarY + radarRadius + (textOffset*3)+10), width=1)
-
-        txt = self.__radarFont.render(" " + str(maxBlipDistance*2) + " mi ", 1, radarColor, self.__black)
-        txtCenterX = radarX
-        txtCenterY = radarY + radarRadius + (textOffset*3)
-        txtRect = txt.get_rect(center=(txtCenterX, txtCenterY))
-        self.__lcd.blit(txt, txtRect)
-
-        self.__oldBlipAngle=0
-        self.__oldBlipDistance=0
-        self.__oldPlotX = 0
-        self.__oldPlotY = 0
-
-    def clearRadar(self):
-        pygame.draw.rect(self.__lcd, self.__black, (400,0,400,416))
-
-    def drawRadarBlip(self,blipAngle,blipDistance):
-        if ((blipDistance != self.__oldBlipDistance) | (blipAngle != self.__oldBlipAngle)):
-            self.__oldBlipAngle = blipAngle
-            self.__oldBlipDistance = blipDistance
-            if (blipDistance > self.__maxBlipDistance-1):
-                blipDistance = self.__maxBlipDistance-1
-
-            #transform blip distance proportionally from mileage to circle radius
-            blipRatio=self.__maxBlipDistance/self.__radarRadius
-            blipRadius=int(blipDistance/blipRatio)
-            #calculate blip (x,y)
-            blipX=blipRadius*math.cos(math.radians(blipAngle))
-            blipY=blipRadius*math.sin(math.radians(blipAngle))
-
-            #transform the coordinates from Unit Circle to Mathematics Circle
-            plotX=blipY
-            plotY=-blipX
-
-            #overwrite the old blip, if there is one
-            if ((self.__oldPlotX != 0) & (self.__oldPlotY != 0)):
-                pygame.draw.circle(self.__lcd, self.__darkOrange, (self.__radarX+int(self.__oldPlotX),self.__radarY+int(self.__oldPlotY)), 2)
-                
-            #plot the blip
-            pygame.draw.circle(self.__lcd, self.__green, (self.__radarX+int(plotX),self.__radarY+int(plotY)), 2)
-            self.__oldPlotX = plotX
-            self.__oldPlotY = plotY
-
