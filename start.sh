@@ -1,0 +1,1 @@
+python3 -B remote.py > pylog.log
