@@ -119,7 +119,7 @@ class Display():
 
     def updateInfoPane(self, civCount, milCount, squitterCount, squitterRate, cpuTemp):
         x = 160
-        pygame.draw.rect(self.__lcd, self.__black, (x-1,20,self.__screenWidth-650,220))
+        pygame.draw.rect(self.__lcd, self.__black, (x-1,20,self.__screenWidth-550,220))
         
         civCnt = "{:,}".format(civCount)
         milCnt = "{:,}".format(milCount)
